@@ -1,0 +1,49 @@
+<input amigo-input="input" type="text" value="{{.NewTodoInputValue}}">
+
+
+
+<button amigo-click="submit" {{if .ShowFlashError}} disabled {{end}}> create </button>
+
+
+</br>
+
+</br> {{if .Loading}}
+
+<div class="spinner-border text-danger" role="status">
+    <span class="visually-hidden">Loading...</span>
+</div>
+
+{{end}}
+
+</br>
+
+<ul>
+    {{ range $index, $todo := .Todos}}
+
+
+    <div class="card" style="width: 18rem;">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+
+
+                <button amigo-click="delete" amigo-value="{{$index}}" type="button" class="btn-close" aria-label="Close"></button> {{$todo.Title}}
+            </li>
+        </ul>
+    </div>
+
+
+    <!-- <li> <button amigo-click="delete" amigo-values="{{$index}}"> {{$index}} - {{$todo.Title}} </button> </li> -->
+    {{end}}
+</ul>
+
+
+{{if .ShowFlashError}}
+
+
+<div class="card text-white bg-danger mb-3  animate__animated animate__fadeOutUp animate__delay-4s" style="max-width: 18rem;">
+    <div class="card-body">
+        <p class="card-text">Message is too long</p>
+    </div>
+</div>
+
+{{end}}
