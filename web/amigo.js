@@ -3,6 +3,7 @@ module.exports = class Amigo {
     static INPUT = "amigo-input"
     static VALUES = "amigo-value"
 
+
     static addHandlersForElementNames = {
         "HTMLButtonElement": (node) => Amigo.addHandler(node, Amigo.CLICK, "click"),
         "HTMLInputElement": (node) => Amigo.addHandler(node, Amigo.INPUT, "input", (node, e) => (["value", node.value])),

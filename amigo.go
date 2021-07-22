@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"html/template"
-	"io"
-	"strings"
 )
 
 type Assigns map[string]interface{}
@@ -15,7 +13,7 @@ type Socket struct {
 
 type LiveComponent interface {
 	Mount(Socket, chan<- Event) error
-	Render() string
+	Render() (Assets, string)
 	HandleEvent(Event, chan<- LiveComponent) error
 	Name() string
 }
@@ -61,32 +59,20 @@ func New(ctx context.Context, component LiveComponent, events chan Event, errors
 }
 
 func render(component LiveComponent, errors chan<- error, renders chan string) {
-	tt, err := template.New(component.Name()).Parse(component.Render())
+	assets, templateString := component.Render()
+
+	tt, err := template.New(component.Name()).Parse(templateString)
 	if err != nil {
 		errors <- err
 	}
 
 	renderBuff := &bytes.Buffer{}
-	err = tt.Execute(renderBuff, component)
+	err = tt.Execute(renderBuff, WithAssets{A: assets, C: component})
 	if err != nil {
 		errors <- err
 	}
 
 	renders <- renderBuff.String()
-}
-
-type StaticDynamic struct {
-	Static  []string
-	Dynamic []interface{}
-}
-
-func NewStaticDynamic(format string, values ...interface{}) StaticDynamic {
-	static := strings.Split(format, "{}")
-
-	return StaticDynamic{
-		Static:  static,
-		Dynamic: values,
-	}
 }
 
 func must(err error) {
@@ -95,8 +81,9 @@ func must(err error) {
 	}
 }
 
-func MustHaveValidTemplate(component LiveComponent) {
-	tt, err := template.New(component.Name()).Parse(component.Render())
-	must(err)
-	must(tt.Execute(io.Discard, component))
+type Assets map[string]interface{}
+
+type WithAssets struct {
+	A Assets
+	C LiveComponent
 }

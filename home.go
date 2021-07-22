@@ -72,10 +72,10 @@ func (h *Home) Render2() StaticDynamic {
 	// }
 }
 
-func (h *Home) Render() string {
+func (h *Home) Render() (Assets, string) {
 	length := len(h.InputValue)
 
-	return fmt.Sprintf(`
+	return Assets{}, fmt.Sprintf(`
 		<button amigo-click="increment"> increment </button>
 		{{.Counter}}
 		<button amigo-click="decrement"> decrement </button>

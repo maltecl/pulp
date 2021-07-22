@@ -82,8 +82,58 @@ func (t *TodosComponent) HandleEvent(event Event, changes chan<- LiveComponent) 
 	return nil
 }
 
-func (t *TodosComponent) Render() string {
-	return t.templateString
+func (t TodosComponent) Render() (Assets, string) {
+	assets := Assets{
+		"messageLength": len(t.NewTodoInputValue),
+	}
+
+	return assets, `
+	<input amigo-input="input" type="text" value="{{.C.NewTodoInputValue}}"> <span> {{.A.messageLength}} </span>
+
+
+
+	<button amigo-click="submit" {{if .C.ShowFlashError}} disabled {{end}}> create </button>
+
+
+	</br>
+
+	</br> {{if .C.Loading}}
+
+	<div class="spinner-border text-danger" role="status">
+			<span class="visually-hidden">Loading...</span>
+	</div>
+
+	{{end}}
+
+	</br>
+
+	<ul>
+			{{ range $index, $todo := .C.Todos}}
+
+			<div class="card" style="width: 18rem;">
+					<ul class="list-group list-group-flush">
+							<li class="list-group-item">
+									<button amigo-click="delete" amigo-value="{{$index}}" type="button" class="btn-close" aria-label="Close"></button> {{$todo.Title}}
+							</li>
+					</ul>
+			</div>
+
+
+			<!-- <li> <button amigo-click="delete" amigo-values="{{$index}}"> {{$index}} - {{$todo.Title}} </button> </li> -->
+			{{end}}
+	</ul>
+
+
+	{{if .C.ShowFlashError}}
+
+
+	<div class="card text-white bg-danger mb-3  animate__animated animate__fadeOutUp animate__delay-4s" style="max-width: 18rem;">
+			<div class="card-body">
+					<p class="card-text">Message is too long</p>
+			</div>
+	</div>
+
+	{{end}}`
 }
 
 func (TodosComponent) Name() string {

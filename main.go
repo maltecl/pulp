@@ -42,7 +42,6 @@ func AmigoMain() {
 	})
 
 	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
-
 		http.ServeFile(rw, r, "web/index.html")
 	})
 
