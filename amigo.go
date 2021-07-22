@@ -1,9 +1,8 @@
 package amigo
 
 import (
-	"bytes"
 	"context"
-	"html/template"
+	"fmt"
 )
 
 type Assigns map[string]interface{}
@@ -13,7 +12,7 @@ type Socket struct {
 
 type LiveComponent interface {
 	Mount(Socket, chan<- Event) error
-	Render() (Assets, string)
+	Render() StaticDynamic
 	HandleEvent(Event, chan<- LiveComponent) error
 	Name() string
 }
@@ -23,8 +22,8 @@ type Event struct {
 	Data map[string]string
 }
 
-func New(ctx context.Context, component LiveComponent, events chan Event, errors chan<- error) <-chan string {
-	renders := make(chan string)
+func New(ctx context.Context, component LiveComponent, events chan Event, errors chan<- error, onMount chan<- StaticDynamic) <-chan Patches {
+	patchesStream := make(chan Patches)
 	changes := make(chan LiveComponent)
 
 	if err := component.Mount(Socket{}, events); err != nil {
@@ -32,8 +31,15 @@ func New(ctx context.Context, component LiveComponent, events chan Event, errors
 		return nil
 	}
 
+	lastRender := component.Render()
+
 	go func() {
-		render(component, errors, renders)
+		onMount <- lastRender
+	}()
+
+	// onMount is closed
+
+	go func() {
 
 	outer:
 		for {
@@ -45,34 +51,31 @@ func New(ctx context.Context, component LiveComponent, events chan Event, errors
 				if err != nil {
 					break outer
 				}
-			case component = <-changes:
+				// case component = <-changes:
 			}
 
-			render(component, errors, renders)
+			newRender := component.Render()
+			patches := Diff(lastRender, newRender)
+			if patches == nil {
+				errors <- fmt.Errorf("nil patches")
+				return
+			}
+
+			// do this on the client side
+			// for k, patch := range map[int]interface{}(*patches) {
+			// 	lastRender.Dynamic[k] = patch
+			// }
+
+			// fmt.Println(lastRender.String())
+
+			patchesStream <- *patches
 		}
 
 		close(changes)
-		close(renders)
+		close(patchesStream)
 	}()
 
-	return renders
-}
-
-func render(component LiveComponent, errors chan<- error, renders chan string) {
-	assets, templateString := component.Render()
-
-	tt, err := template.New(component.Name()).Parse(templateString)
-	if err != nil {
-		errors <- err
-	}
-
-	renderBuff := &bytes.Buffer{}
-	err = tt.Execute(renderBuff, WithAssets{A: assets, C: component})
-	if err != nil {
-		errors <- err
-	}
-
-	renders <- renderBuff.String()
+	return patchesStream
 }
 
 func must(err error) {

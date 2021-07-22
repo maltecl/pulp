@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/kr/pretty"
 )
 
 func equal(a, b []int) bool {
@@ -67,6 +68,54 @@ func TestDiff(t *testing.T) {
 		}
 
 		t.Error(errStr.String())
+	}
+
+}
+
+func TestNewStaticDynamic(t *testing.T) {
+
+	cases := []struct {
+		static  string
+		dynamic []interface{}
+
+		expectedSD     StaticDynamic
+		expectedString string
+	}{
+		{
+			static:         "hello {}",
+			dynamic:        []interface{}{0},
+			expectedSD:     StaticDynamic{Static: []string{"hello ", ""}, Dynamic: []interface{}{0}},
+			expectedString: "hello 0",
+		},
+	}
+
+	for i, tc := range cases {
+		got := NewStaticDynamic(tc.static, tc.dynamic...)
+		eq := Comparable(got, tc.expectedSD) && cmp.Equal(got, tc.expectedSD)
+		eqString := cmp.Equal(tc.expectedString, got.String())
+
+		if eq && eqString {
+			continue
+		}
+
+		errStr := &strings.Builder{}
+
+		fmt.Fprintf(errStr, "test %v: ", i)
+
+		if !eq {
+			fmt.Fprintf(errStr, "!eq: ")
+			fmt.Fprintf(errStr, "%v (expected) != %v", pretty.Sprint(tc.expectedSD), pretty.Sprint(got))
+			fmt.Fprintf(errStr, "\ndiff:%v", cmp.Diff(tc.expectedSD, got))
+		}
+
+		if !eqString {
+			fmt.Fprintf(errStr, "!eqString: ")
+			fmt.Fprintf(errStr, "%q (expected) != %q", tc.expectedString, got.String())
+			fmt.Fprintf(errStr, "\ndiff:%v", cmp.Diff(tc.expectedString, got.String()))
+		}
+
+		t.Error(errStr.String())
+
 	}
 
 }

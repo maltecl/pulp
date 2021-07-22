@@ -1,141 +1,125 @@
 package amigo
 
-import (
-	"fmt"
-	"io/ioutil"
-	"os"
-	"strings"
-	"time"
+// var _ LiveComponent = &TodosComponent{}
 
-	"github.com/teris-io/shortid"
-)
+// type TodosComponent struct {
+// 	Todos map[string]Todo
 
-var _ LiveComponent = &TodosComponent{}
+// 	NewTodoInputValue string
+// 	Loading           bool
 
-type TodosComponent struct {
-	Todos map[string]Todo
+// 	ShowFlashError bool
 
-	NewTodoInputValue string
-	Loading           bool
+// 	templateString string
+// }
 
-	ShowFlashError bool
+// type Todo struct {
+// 	Title string
+// }
 
-	templateString string
-}
+// func (t *TodosComponent) Mount(socket Socket, events chan<- Event) error {
+// 	t.Todos = map[string]Todo{}
+// 	t.Todos[shortid.MustGenerate()] = Todo{"todo 1"}
+// 	t.Todos[shortid.MustGenerate()] = Todo{"todo 2"}
+// 	t.Todos[shortid.MustGenerate()] = Todo{"todo 1"}
 
-type Todo struct {
-	Title string
-}
+// 	file, err := os.Open("todos.temp.html")
+// 	if err != nil {
+// 		return err
+// 	}
 
-func (t *TodosComponent) Mount(socket Socket, events chan<- Event) error {
-	t.Todos = map[string]Todo{}
-	t.Todos[shortid.MustGenerate()] = Todo{"todo 1"}
-	t.Todos[shortid.MustGenerate()] = Todo{"todo 2"}
-	t.Todos[shortid.MustGenerate()] = Todo{"todo 1"}
+// 	bs, err := ioutil.ReadAll(file)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	t.templateString = string(bs)
 
-	file, err := os.Open("todos.temp.html")
-	if err != nil {
-		return err
-	}
+// 	return nil
+// }
 
-	bs, err := ioutil.ReadAll(file)
-	if err != nil {
-		return err
-	}
-	t.templateString = string(bs)
+// func (t *TodosComponent) HandleEvent(event Event, changes chan<- LiveComponent) error {
 
-	return nil
-}
+// 	switch event.Name {
+// 	case "input":
+// 		t.NewTodoInputValue = event.Data["value"]
+// 		t.ShowFlashError = len(strings.Trim(t.NewTodoInputValue, " \n\t")) > 10
 
-func (t *TodosComponent) HandleEvent(event Event, changes chan<- LiveComponent) error {
+// 	case "submit":
+// 		if t.NewTodoInputValue == "" {
+// 			break
+// 		}
 
-	switch event.Name {
-	case "input":
-		t.NewTodoInputValue = event.Data["value"]
-		t.ShowFlashError = len(strings.Trim(t.NewTodoInputValue, " \n\t")) > 10
+// 		t.Loading = true
 
-	case "submit":
-		if t.NewTodoInputValue == "" {
-			break
-		}
+// 		go func() {
+// 			time.Sleep(time.Second / 8)
+// 			t.Loading = false
+// 			t.Todos[shortid.MustGenerate()] = Todo{Title: strings.Trim(t.NewTodoInputValue, " \n\t")}
+// 			t.NewTodoInputValue = ""
+// 			changes <- t
+// 		}()
 
-		t.Loading = true
+// 		return nil
 
-		go func() {
-			time.Sleep(time.Second / 8)
-			t.Loading = false
-			t.Todos[shortid.MustGenerate()] = Todo{Title: strings.Trim(t.NewTodoInputValue, " \n\t")}
-			t.NewTodoInputValue = ""
-			changes <- t
-		}()
+// 	case "delete":
+// 		id := event.Data["value"]
+// 		if id == "" {
+// 			return fmt.Errorf("empty id")
+// 		}
+// 		delete(t.Todos, id)
+// 	}
 
-		return nil
+// 	return nil
+// }
 
-	case "delete":
-		id := event.Data["value"]
-		if id == "" {
-			return fmt.Errorf("empty id")
-		}
-		delete(t.Todos, id)
-	}
+// func (t TodosComponent) Render() (Assets, string) {
+// 	assets := Assets{
+// 		"messageLength": len(t.NewTodoInputValue),
+// 	}
 
-	return nil
-}
+// 	return assets, `
+// 	<input amigo-input="input" type="text" value="{{.C.NewTodoInputValue}}"> <span> {{.A.messageLength}} </span>
 
-func (t TodosComponent) Render() (Assets, string) {
-	assets := Assets{
-		"messageLength": len(t.NewTodoInputValue),
-	}
+// 	<button amigo-click="submit" {{if .C.ShowFlashError}} disabled {{end}}> create </button>
 
-	return assets, `
-	<input amigo-input="input" type="text" value="{{.C.NewTodoInputValue}}"> <span> {{.A.messageLength}} </span>
+// 	</br>
 
+// 	</br> {{if .C.Loading}}
 
+// 	<div class="spinner-border text-danger" role="status">
+// 			<span class="visually-hidden">Loading...</span>
+// 	</div>
 
-	<button amigo-click="submit" {{if .C.ShowFlashError}} disabled {{end}}> create </button>
+// 	{{end}}
 
+// 	</br>
 
-	</br>
+// 	<ul>
+// 			{{ range $index, $todo := .C.Todos}}
 
-	</br> {{if .C.Loading}}
+// 			<div class="card" style="width: 18rem;">
+// 					<ul class="list-group list-group-flush">
+// 							<li class="list-group-item">
+// 									<button amigo-click="delete" amigo-value="{{$index}}" type="button" class="btn-close" aria-label="Close"></button> {{$todo.Title}}
+// 							</li>
+// 					</ul>
+// 			</div>
 
-	<div class="spinner-border text-danger" role="status">
-			<span class="visually-hidden">Loading...</span>
-	</div>
+// 			<!-- <li> <button amigo-click="delete" amigo-values="{{$index}}"> {{$index}} - {{$todo.Title}} </button> </li> -->
+// 			{{end}}
+// 	</ul>
 
-	{{end}}
+// 	{{if .C.ShowFlashError}}
 
-	</br>
+// 	<div class="card text-white bg-danger mb-3  animate__animated animate__fadeOutUp animate__delay-4s" style="max-width: 18rem;">
+// 			<div class="card-body">
+// 					<p class="card-text">Message is too long</p>
+// 			</div>
+// 	</div>
 
-	<ul>
-			{{ range $index, $todo := .C.Todos}}
+// 	{{end}}`
+// }
 
-			<div class="card" style="width: 18rem;">
-					<ul class="list-group list-group-flush">
-							<li class="list-group-item">
-									<button amigo-click="delete" amigo-value="{{$index}}" type="button" class="btn-close" aria-label="Close"></button> {{$todo.Title}}
-							</li>
-					</ul>
-			</div>
-
-
-			<!-- <li> <button amigo-click="delete" amigo-values="{{$index}}"> {{$index}} - {{$todo.Title}} </button> </li> -->
-			{{end}}
-	</ul>
-
-
-	{{if .C.ShowFlashError}}
-
-
-	<div class="card text-white bg-danger mb-3  animate__animated animate__fadeOutUp animate__delay-4s" style="max-width: 18rem;">
-			<div class="card-body">
-					<p class="card-text">Message is too long</p>
-			</div>
-	</div>
-
-	{{end}}`
-}
-
-func (TodosComponent) Name() string {
-	return "TodosComponent"
-}
+// func (TodosComponent) Name() string {
+// 	return "TodosComponent"
+// }

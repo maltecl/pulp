@@ -1,8 +1,8 @@
 {
-    "name": "web",
+    "name": "amgio_web",
     "version": "1.0.0",
     "description": "",
-    "main": "index.js",
+    "main": "amigo.js",
     "scripts": {
         "build": "browserify index.js > bundle/bundle.js",
         "test": "echo \"Error: no test specified\""

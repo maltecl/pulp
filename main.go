@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	"github.com/kr/pretty"
 )
 
 // var _ io.WriteCloser = &ChannelWriter{}
@@ -35,7 +36,7 @@ import (
 // 	return len(bytes), nil
 // }
 
-func AmigoMain() {
+func AmigoMain(component LiveComponent) {
 
 	http.HandleFunc("/bundle/bundle.js", func(rw http.ResponseWriter, r *http.Request) {
 		http.ServeFile(rw, r, "web/bundle/bundle.js")
@@ -60,15 +61,23 @@ func AmigoMain() {
 
 		ctx, canc := context.WithCancel(context.Background())
 
+		onMount := make(chan StaticDynamic)
 		errors := make(chan error)
-		renders := New(ctx, &TodosComponent{}, events, errors)
+
+		patchesStream := New(ctx, component, events, errors, onMount)
+
+		// renders := make(chan string)
+
+		fmt.Println("mounted: ", (<-onMount).String())
 
 		go func() {
-			for render := range renders {
-				err := conn.WriteMessage(websocket.BinaryMessage, []byte(render))
-				if err != nil {
-					errors <- err
-				}
+			for patches := range patchesStream {
+				pretty.Println(patches)
+
+				// err := conn.WriteMessage(websocket.BinaryMessage, []byte(render))
+				// if err != nil {
+				// 	errors <- err
+				// }
 			}
 		}()
 
