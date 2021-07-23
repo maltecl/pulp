@@ -11,7 +11,7 @@ type Socket struct {
 }
 
 type LiveComponent interface {
-	Mount(Socket, chan<- Event) error
+	Mount(Socket, chan<- Event, chan<- LiveComponent) error
 	Render() StaticDynamic
 	HandleEvent(Event, chan<- LiveComponent) error
 	Name() string
@@ -26,7 +26,7 @@ func New(ctx context.Context, component LiveComponent, events chan Event, errors
 	patchesStream := make(chan Patches)
 	changes := make(chan LiveComponent)
 
-	if err := component.Mount(Socket{}, events); err != nil {
+	if err := component.Mount(Socket{}, events, changes); err != nil {
 		errors <- err
 		return nil
 	}
@@ -51,24 +51,20 @@ func New(ctx context.Context, component LiveComponent, events chan Event, errors
 				if err != nil {
 					break outer
 				}
-				// case component = <-changes:
+			case component = <-changes:
 			}
 
 			newRender := component.Render()
-			patches := Diff(lastRender, newRender)
+			patches, patchesNotEmpty := Diff(lastRender, newRender)
 			if patches == nil {
 				errors <- fmt.Errorf("nil patches")
 				return
 			}
 
-			// do this on the client side
-			// for k, patch := range map[int]interface{}(*patches) {
-			// 	lastRender.Dynamic[k] = patch
-			// }
-
-			// fmt.Println(lastRender.String())
-
-			patchesStream <- *patches
+			if patchesNotEmpty {
+				lastRender = newRender
+				patchesStream <- *patches
+			}
 		}
 
 		close(changes)

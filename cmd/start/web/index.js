@@ -81,6 +81,9 @@ ws.onmessage = ({
 
             cachedSD = applyPatchesToCachedSD(cachedSD, patches)
 
+
+            Object.assign(globalThis, { cachedSD })
+
             // console.log(cachedSD)
 
             const temp = document.createElement("div")
@@ -94,19 +97,7 @@ ws.onmessage = ({
 
 
 
-// func (s StaticDynamic) String() string {
-// 	res := strings.Builder{}
 
-// 	for i := range s.Static {
-// 		res.WriteString(s.Static[i])
-
-// 		if ok := i < len(s.Dynamic); ok {
-// 			res.WriteString(fmt.Sprint(s.Dynamic[i]))
-// 		}
-// 	}
-
-// 	return res.String()
-// }
 
 function staticDynamicToString({ s, d }) {
     let out = ""
@@ -115,7 +106,23 @@ function staticDynamicToString({ s, d }) {
         out += s[i]
 
         if (i < d.length) {
-            out += d[i]
+
+
+            if (d[i].c !== undefined) { // ifTemplate
+                const template = d[i]
+                const { c, t, f } = template
+
+                let ifStr = ""
+                if (c) {
+                    ifStr = staticDynamicToString({ s: t, d: set(template.d) ? template.d : [] })
+                } else {
+                    ifStr = staticDynamicToString({ s: f, d: set(template.d) ? template.d : [] })
+                }
+                out += ifStr
+            } else {
+                out += d[i]
+            }
+
         }
     }
 
@@ -124,17 +131,50 @@ function staticDynamicToString({ s, d }) {
 
 
 
-// do this on the client side
-// for k, patch := range map[int]interface{}(*patches) {
-// 	lastRender.Dynamic[k] = patch
-// }
+
 function applyPatchesToCachedSD(cached, patches) /*new sd*/ {
     const copy = {...cached }
 
 
     Object.keys(patches).forEach(k => {
-        copy.d[k] = patches[k]
+        if (isIf(patches[k])) {
+            copy.d[k] = patchIf(copy.d[k], patches[k])
+        } else {
+            copy.d[k] = patches[k]
+        }
     })
 
     return copy
+}
+
+
+
+const set = x => x !== undefined
+
+function isIf(d) {
+    return set(d.c) || set(d.t) || set(d.f) || set(d.d)
+}
+
+function patchIf(old, new_) {
+
+    let d = set(new_.d) ? new_.d : old.d
+
+    // reset the dynamics, if condition changed (meaning, the other statics are rendered), and no new dynamics were provided
+    if (set(new_.c)) {
+        const conditionChanged = old.c != new_.c
+        d = set(new_.d) ? new_.d : []
+    }
+
+
+    const ret = {
+        c: set(new_.c) ? new_.c : old.c,
+        t: set(new_.t) ? new_.t : old.t,
+        f: set(new_.f) ? new_.f : old.f,
+        d: d,
+    }
+
+    Object.assign(globalThis, { lastPatch: ret })
+
+    return ret
+
 }
