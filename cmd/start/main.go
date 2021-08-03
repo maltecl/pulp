@@ -2,13 +2,11 @@ package main
 
 import (
 	"amigo"
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/gorilla/websocket"
 	"github.com/kr/pretty"
@@ -62,9 +60,9 @@ func init() {
 
 func main() {
 
-	errors := make(chan error, 2)
-
 	http.HandleFunc("/ws", func(rw http.ResponseWriter, r *http.Request) {
+
+		errors := make(chan error, 2)
 
 		upgrader := websocket.Upgrader{}
 
@@ -120,15 +118,15 @@ func main() {
 			errors <- nil
 		}()
 
-		go func() {
-			for {
-				_, err := bufio.NewReader(os.Stdin).ReadByte()
-				if err != nil {
-					errors <- err
-				}
-				events <- amigo.Event{Name: "event1"}
-			}
-		}()
+		// go func() {
+		// 	for {
+		// 		_, err := bufio.NewReader(os.Stdin).ReadByte()
+		// 		if err != nil {
+		// 			errors <- err
+		// 		}
+		// 		events <- amigo.Event{Name: "event1"}
+		// 	}
+		// }()
 
 		// events <- amigo.Event{Name: "event1"}
 		// events <- amigo.Event{Name: "event1"}
@@ -141,8 +139,11 @@ func main() {
 
 				err := conn.ReadJSON(&msg)
 				if err != nil {
-					errors <- err
-					continue
+					select {
+					case errors <- err:
+					case <-ctx.Done():
+						return
+					}
 				}
 
 				fmt.Println(msg)
@@ -150,9 +151,10 @@ func main() {
 				t := msg["type"]
 				delete(msg, "type")
 
-				events <- amigo.Event{
-					Name: t,
-					Data: msg,
+				select {
+				case <-ctx.Done():
+					return
+				case events <- amigo.Event{Name: t, Data: msg}:
 				}
 			}
 
@@ -166,6 +168,6 @@ func main() {
 		close(errors)
 	})
 
-	errors <- http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8080", nil)
 
 }

@@ -15,14 +15,14 @@ type TestSite struct {
 	}
 }
 
-func (t *TestSite) Mount(socket amigo.Socket, events chan<- amigo.Event, changes chan<- amigo.LiveComponent) error {
+func (t *TestSite) Mount(socket amigo.Socket) {
 	t.Username = "Donald Duck"
 	t.Age = 14
 
 	go func() {
 		for range time.NewTicker(time.Second).C {
 			t.Nested.X++
-			changes <- t
+			socket.Changes(t).Do()
 		}
 	}()
 
@@ -30,14 +30,14 @@ func (t *TestSite) Mount(socket amigo.Socket, events chan<- amigo.Event, changes
 		time.Sleep(time.Second / 2)
 		for range time.NewTicker(time.Second).C {
 			t.Nested.Y--
-			changes <- t
+			socket.Changes(t).Do()
 		}
 	}()
 
-	return nil
+	socket.Changes(t).Do()
 }
 
-func (t *TestSite) HandleEvent(event amigo.Event, changes chan<- amigo.LiveComponent) error {
+func (t *TestSite) HandleEvent(event amigo.Event, socket amigo.Socket) {
 
 	// if t.Age%2 == 0 {
 	// 	t.Username += ", Donald"
@@ -49,10 +49,12 @@ func (t *TestSite) HandleEvent(event amigo.Event, changes chan<- amigo.LiveCompo
 	case "name_changed":
 		t.Username = event.Data["value"]
 	case "reset":
-		t.Username = ""
+		// t.Username = ""
+
+		socket.Errorf("not good :/ ")
 	}
 
-	return nil
+	socket.Changes(t).Do()
 }
 
 func (t TestSite) Render() amigo.StaticDynamic {
@@ -60,7 +62,7 @@ func (t TestSite) Render() amigo.StaticDynamic {
 	cond0 := len(t.Username) > 5
 	arg0 := amigo.IfTemplate{
 		Condition:   &cond0,
-		StaticTrue:  []string{"hello world", ""},
+		StaticTrue:  []string{"hello world: ", ""},
 		StaticFalse: []string{"<span>count:", "</span> // <span>", "</span>"},
 	}
 
@@ -81,7 +83,8 @@ func (t TestSite) Render() amigo.StaticDynamic {
 	arg1.Dynamics = append(arg1.Dynamics, []interface{}{"duster rocks", "i love duster"})
 
 	return amigo.NewStaticDynamic(
-		`<button amigo-click="increment">increment</button>
+		`text: <h4>{}</h4>
+		<button amigo-click="increment">increment</button>
 		<button amigo-click="reset">reset</button>
 
 		<input amigo-input="name_changed" value="{}">
@@ -91,6 +94,7 @@ func (t TestSite) Render() amigo.StaticDynamic {
 		{}
 		{}`,
 
+		t.Username,
 		t.Username,
 		t.Age,
 		arg0,

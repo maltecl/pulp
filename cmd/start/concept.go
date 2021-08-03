@@ -4,6 +4,12 @@ package main
 
 import "time"
 
+type MyComponent struct{}
+
+func (c MyComponent) Mount(s Socket, newS chan<- Socket) {
+
+}
+
 func (c MyComponent) HandleEvent(e Event, s Socket, newS chan<- Socket) {
 	if e.Name == "submitted" {
 		data := e.Params
@@ -42,6 +48,11 @@ func (c MyComponent) Render() string {
 			<span amigo-id="{{ index }}"" class="document-line">
 				{{ index }} :- {{ line }}
 			</span>
+		{{ end }}
+
+
+		{{ prepend/append for message := range c.newMessages}}
+			 <span> {{ message.From.Name }} </span> <bold> {{ string(message.Body) }} </bold>
 		{{ end }}
 	`
 

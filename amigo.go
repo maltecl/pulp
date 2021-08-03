@@ -8,12 +8,35 @@ import (
 type Assigns map[string]interface{}
 
 type Socket struct {
+	updates   chan Socket
+	lastState LiveComponent
+	Err       error
+	context.Context
+}
+
+func (s *Socket) Errorf(format string, values ...interface{}) *Socket {
+	s.Err = fmt.Errorf(format, values...)
+	return s
+}
+
+func (s *Socket) Changes(state LiveComponent) *Socket {
+	s.lastState = state
+	return s
+}
+
+func (s Socket) Do() {
+	go func() {
+		select {
+		case <-s.Context.Done():
+		case s.updates <- s:
+		}
+	}()
 }
 
 type LiveComponent interface {
-	Mount(Socket, chan<- Event, chan<- LiveComponent) error
+	Mount(Socket)
 	Render() StaticDynamic
-	HandleEvent(Event, chan<- LiveComponent) error
+	HandleEvent(Event, Socket)
 	Name() string
 }
 
@@ -23,23 +46,26 @@ type Event struct {
 }
 
 func New(ctx context.Context, component LiveComponent, events chan Event, errors chan<- error, onMount chan<- StaticDynamic) <-chan Patches {
-	patchesStream := make(chan Patches)
-	changes := make(chan LiveComponent)
 
-	if err := component.Mount(Socket{}, events, changes); err != nil {
-		errors <- err
+	socket := Socket{Context: ctx, updates: make(chan Socket)}
+	patchesStream := make(chan Patches)
+
+	component.Mount(socket)
+	socket = <-socket.updates
+	if socket.Err != nil {
+		errors <- socket.Err
 		return nil
 	}
 
 	lastRender := component.Render()
-
-	go func() {
-		onMount <- lastRender
-	}()
-
+	go func() { onMount <- lastRender }()
 	// onMount is closed
 
 	go func() {
+		defer func() {
+			close(socket.updates)
+			close(patchesStream)
+		}()
 
 	outer:
 		for {
@@ -47,11 +73,13 @@ func New(ctx context.Context, component LiveComponent, events chan Event, errors
 			case <-ctx.Done():
 				break outer
 			case event := <-events:
-				err := component.HandleEvent(event, changes)
-				if err != nil {
-					break outer
+				component.HandleEvent(event, socket)
+				continue outer
+			case socket = <-socket.updates:
+				if socket.Err != nil {
+					errors <- socket.Err
 				}
-			case component = <-changes:
+				component = socket.lastState
 			}
 
 			newRender := component.Render()
@@ -70,9 +98,6 @@ func New(ctx context.Context, component LiveComponent, events chan Event, errors
 				}
 			}
 		}
-
-		close(changes)
-		close(patchesStream)
 	}()
 
 	return patchesStream
