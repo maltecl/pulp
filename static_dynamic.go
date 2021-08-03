@@ -35,6 +35,15 @@ func (s StaticDynamic) String() string {
 					ifStr = StaticDynamic{r.StaticFalse, r.Dynamic}.String()
 				}
 				res.WriteString(ifStr)
+
+			case ForTemplate:
+				forStr := strings.Builder{}
+
+				for _, dynamic := range r.Dynamics {
+					fmt.Fprint(&forStr, StaticDynamic{Static: r.Static, Dynamic: dynamic}.String())
+				}
+
+				res.WriteString(forStr.String())
 			default:
 				res.WriteString(fmt.Sprint(s.Dynamic[i]))
 			}
@@ -51,7 +60,7 @@ func Comparable(sd1, sd2 StaticDynamic) bool {
 type Patches map[int]interface{}
 
 func Diff(sd1, sd2 StaticDynamic) (*Patches, bool) {
-	needsPatch, err := diff(sd1, sd2)
+	needsPatch, err := diff(sd1.Dynamic, sd2.Dynamic)
 	if err != nil {
 		return nil, false
 	}
@@ -64,7 +73,6 @@ func Diff(sd1, sd2 StaticDynamic) (*Patches, bool) {
 
 		switch new_ := patch.(type) {
 		case IfTemplate:
-
 			old := sd1.Dynamic[patchIndex].(IfTemplate)
 
 			diff := IfTemplate{}
@@ -92,15 +100,15 @@ func Diff(sd1, sd2 StaticDynamic) (*Patches, bool) {
 }
 
 // TODO applies to many patches?
-func diff(sd1, sd2 StaticDynamic) ([]int, error) {
-	if !Comparable(sd1, sd2) {
+func diff(d1, d2 []interface{}) ([]int, error) {
+	if len(d1) != len(d2) {
 		return []int{}, fmt.Errorf(("err 1"))
 	}
 
-	ret := make([]int, 0, len(sd1.Dynamic))
+	ret := make([]int, 0, len(d1))
 
-	for i := 0; i < len(sd1.Dynamic); i++ {
-		if !cmp.Equal(sd1.Dynamic[i], sd2.Dynamic[i]) {
+	for i := 0; i < len(d1); i++ {
+		if !cmp.Equal(d1[i], d2[i]) {
 			ret = append(ret, i)
 		}
 
@@ -281,11 +289,11 @@ func _() string {
 	}
 
 	arg0 := ForTemplate{}
-	arg0.template = PartialStatic("{{post.title}} - {{post.body}}")
-	arg0.dynamic = make([][]interface{}, 0)
+	arg0.Static = PartialStatic("{{post.title}} - {{post.body}}")
+	arg0.Dynamics = make([][]interface{}, 0)
 
 	for _, post := range posts {
-		arg0.dynamic = append(arg0.dynamic, []interface{}{post.title, post.body})
+		arg0.Dynamics = append(arg0.Dynamics, []interface{}{post.title, post.body})
 	}
 
 	_ = StaticDynamic{
@@ -308,6 +316,6 @@ func _() string {
 
 // for deep compare?
 type ForTemplate struct {
-	template []string
-	dynamic  [][]interface{}
+	Static   []string        `json:"s"`
+	Dynamics [][]interface{} `json:"ds"`
 }

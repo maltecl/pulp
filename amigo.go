@@ -63,7 +63,11 @@ func New(ctx context.Context, component LiveComponent, events chan Event, errors
 
 			if patchesNotEmpty {
 				lastRender = newRender
-				patchesStream <- *patches
+				select {
+				case <-ctx.Done():
+					break outer
+				case patchesStream <- *patches:
+				}
 			}
 		}
 

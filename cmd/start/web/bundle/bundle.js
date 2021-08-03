@@ -12,9 +12,6 @@ const morphdomHooks = {
         return node;
     },
     onNodeAdded: function(node) {
-
-        console.log(node)
-
         const maybeHandler = Amigo.addHandlersForElementNames[node.constructor.name]
         maybeHandler && maybeHandler(node)
     },
@@ -107,9 +104,15 @@ function staticDynamicToString({ s, d }) {
         out += s[i]
 
         if (i < d.length) {
+            if (set(d[i].ds)) { // forTemplate
+                const template = d[i]
+                let forStr = ""
 
-
-            if (d[i].c !== undefined) { // ifTemplate
+                template.ds.forEach(dynamic => {
+                    forStr += staticDynamicToString({ s: template.s, d: dynamic })
+                })
+                out += forStr
+            } else if (d[i].c !== undefined) { // ifTemplate
                 const template = d[i]
                 const { c, t, f } = template
 
@@ -138,6 +141,9 @@ function applyPatchesToCachedSD(cached, patches) /*new sd*/ {
 
 
     Object.keys(patches).forEach(k => {
+        // if (set(copy.d[i].ds)) {
+        // console.log("FOR PATCH")
+        // } else 
         if (isIf(patches[k])) {
             copy.d[k] = patchIf(copy.d[k], patches[k])
         } else {

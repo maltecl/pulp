@@ -47,7 +47,7 @@ func TestDiff(t *testing.T) {
 
 	for i, tc := range cases {
 		want := tc.diff
-		got, err := diff(tc.x, tc.y)
+		got, err := diff(tc.x.Dynamic, tc.y.Dynamic)
 
 		expectedComparable := (err != nil) == tc.notComparable
 		eq := cmp.Equal(got, want)
