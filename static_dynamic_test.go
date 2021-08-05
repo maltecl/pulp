@@ -24,47 +24,76 @@ func equal(a, b []int) bool {
 func TestDiff(t *testing.T) {
 
 	cases := []struct {
-		x, y          StaticDynamic
-		diff          []int
-		notComparable bool
+		from, to   Diffable
+		patches    *Patches
+		exptectErr bool
 	}{
 		{
-			x:    StaticDynamic{Dynamic: []interface{}{"hello"}},
-			y:    StaticDynamic{Dynamic: []interface{}{"hello"}},
-			diff: []int{},
+			from: Dynamics{"hello"},
+			to:   Dynamics{"hello"},
 		},
 		{
-			x:    StaticDynamic{Dynamic: []interface{}{""}},
-			y:    StaticDynamic{Dynamic: []interface{}{"hello"}},
-			diff: []int{0},
+			from:    Dynamics{""},
+			to:      Dynamics{"hello"},
+			patches: &Patches{"0": "hello"},
 		},
 		{
-			x:             StaticDynamic{Dynamic: []interface{}{""}},
-			y:             StaticDynamic{Dynamic: []interface{}{"hello", ""}},
-			notComparable: true,
+			from:       Dynamics{""},
+			to:         Dynamics{"hello", ""},
+			exptectErr: true,
+		},
+		// if
+		{
+			from: If{True: StaticDynamic{Dynamic: Dynamics{"hello"}}},
+			to:   If{True: StaticDynamic{Dynamic: Dynamics{"hello"}}},
+		},
+		{
+			from:    If{True: StaticDynamic{Dynamic: Dynamics{"hello"}}},
+			to:      If{Condition: true, True: StaticDynamic{Dynamic: Dynamics{"hello"}}},
+			patches: &Patches{"c": true},
+		},
+		{
+			from:    If{True: StaticDynamic{Dynamic: Dynamics{"hello"}}},
+			to:      If{Condition: true, True: StaticDynamic{Dynamic: Dynamics{""}}},
+			patches: &Patches{"c": true, "t": &Patches{"0": ""}},
 		},
 	}
 
 	for i, tc := range cases {
-		want := tc.diff
-		got, err := diff(tc.x.Dynamic, tc.y.Dynamic)
 
-		expectedComparable := (err != nil) == tc.notComparable
+		var (
+			want = tc.patches
+			got  *Patches
+			err  error
+		)
+
+		errCatcher := func() {
+			if mErr, isErr := recover().(error); isErr && mErr != nil {
+				err = mErr
+			}
+		}
+
+		func() {
+			defer errCatcher()
+			got = tc.from.Diff(tc.to)
+		}()
+
+		errMatches := tc.exptectErr == (err != nil)
 		eq := cmp.Equal(got, want)
 
-		if expectedComparable && (tc.notComparable || eq) {
+		if eq && errMatches {
 			continue
 		}
 
 		errStr := &strings.Builder{}
 		fmt.Fprintf(errStr, "test %v: ", i)
 
-		if !expectedComparable {
-			fmt.Fprintf(errStr, "tc.notComparable: %v (expected) != %v", tc.notComparable, err != nil)
+		if !eq {
+			fmt.Fprintf(errStr, "\n%v (expected) != %v,\ndiff: %s", want, got, cmp.Diff(got, want))
 		}
 
-		if expectedComparable && !eq {
-			fmt.Fprintf(errStr, "\n%v (expected) != %v,\ndiff: %s", want, got, cmp.Diff(got, want))
+		if err != nil {
+			fmt.Fprintf(errStr, "\ngot unexpected error: %v", err)
 		}
 
 		t.Error(errStr.String())

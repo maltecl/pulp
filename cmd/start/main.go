@@ -18,6 +18,7 @@ func init() {
 	})
 
 	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Println("got em")
 		http.ServeFile(rw, r, "web/index.html")
 	})
 }
@@ -74,12 +75,11 @@ func main() {
 		}
 
 		events := make(chan amigo.Event)
+		onMount := make(chan amigo.StaticDynamic)
 
 		ctx, canc := context.WithCancel(context.Background())
 
-		onMount := make(chan amigo.StaticDynamic)
-
-		patchesStream := amigo.New(ctx, &TestSite{}, events, errors, onMount)
+		patchesStream := amigo.New(ctx, &Simple3{}, events, errors, onMount)
 
 		// send mount message
 
@@ -89,6 +89,9 @@ func main() {
 			fmt.Println("mounted: ", mountedWith.String())
 
 			payload, err := json.Marshal(mountedWith)
+
+			fmt.Println("payload: ", string(payload))
+
 			if err != nil {
 				errors <- err
 			}

@@ -54,7 +54,7 @@ ws.onmessage = ({
     data.text()
         .then(message => {
 
-            Object.assign(globalThis, { lastMessage: message })
+            Object.assign(globalThis, { lastMessage: JSON.parse(message) })
 
 
             if (!hasMounted) {
@@ -77,7 +77,13 @@ ws.onmessage = ({
 
             const patches = JSON.parse(message)
 
-            cachedSD = applyPatchesToCachedSD(cachedSD, patches)
+
+            const d = Dynamics.patch(cachedSD.d, patches)
+            cachedSD = {...cachedSD, d }
+
+
+            // cachedSD = applyPatchesToCachedSD(cachedSD, patches)
+
 
 
             Object.assign(globalThis, { cachedSD })
@@ -86,7 +92,9 @@ ws.onmessage = ({
 
             const temp = document.createElement("div")
             temp.id = "mount"
-            temp.innerHTML = staticDynamicToString(cachedSD)
+            const lastRender = staticDynamicToString(cachedSD)
+            Object.assign(globalThis, { lastRender })
+            temp.innerHTML = lastRender
             morphdom(mount, temp, morphdomHooks)
 
         }).catch(console.error)
@@ -103,6 +111,10 @@ function staticDynamicToString({ s, d }) {
     for (let i = 0; i < s.length; i++) {
         out += s[i]
 
+        if (!d) {
+            continue
+        }
+
         if (i < d.length) {
             if (set(d[i].ds)) { // forTemplate
                 const template = d[i]
@@ -112,17 +124,8 @@ function staticDynamicToString({ s, d }) {
                     forStr += staticDynamicToString({ s: template.s, d: dynamic })
                 })
                 out += forStr
-            } else if (d[i].c !== undefined) { // ifTemplate
-                const template = d[i]
-                const { c, t, f } = template
-
-                let ifStr = ""
-                if (c) {
-                    ifStr = staticDynamicToString({ s: t, d: set(template.d) ? template.d : [] })
-                } else {
-                    ifStr = staticDynamicToString({ s: f, d: set(template.d) ? template.d : [] })
-                }
-                out += ifStr
+            } else if (If.detect(d[i])) { // ifTemplate
+                out += If.render(d[i])
             } else {
                 out += d[i]
             }
@@ -133,58 +136,78 @@ function staticDynamicToString({ s, d }) {
     return out
 }
 
+const If = {
+    render({ c, t, f }) {
+        return staticDynamicToString(c ? t : f)
+    },
+    patch(old, patches) {
+        // reset the dynamics, if condition changed (meaning, the other statics are rendered), and no new dynamics were provided
+        // if (set(patches.c)) {
+        //     const conditionChanged = old.c != patches.c
+        //     d = set(patches.d) ? patches.d : []
+        // }
 
-
-
-function applyPatchesToCachedSD(cached, patches) /*new sd*/ {
-    const copy = {...cached }
-
-
-    Object.keys(patches).forEach(k => {
-        // if (set(copy.d[i].ds)) {
-        // console.log("FOR PATCH")
-        // } else 
-        if (isIf(patches[k])) {
-            copy.d[k] = patchIf(copy.d[k], patches[k])
-        } else {
-            copy.d[k] = patches[k]
+        const ret = {
+            c: set(patches.c) ? patches.c : old.c,
+            t: { s: old.t.s, d: set(patches.t) ? Dynamics.patch(old.t.d, patches.t) : old.t.d },
+            f: { s: old.f.s, d: set(patches.f) ? Dynamics.patch(old.f.d, patches.f) : old.f.d },
         }
-    })
 
-    return copy
+        return ret
+    },
+    detect(it) {
+        return set(it.c) || set(it.f) || set(it.t)
+    }
 }
+
+
+const Dynamics = {
+    render(list) {
+
+    },
+    patch(old, patches) {
+        let copy = [...old]
+
+        Object.keys(patches).forEach(key => {
+            if (If.detect(copy[key])) {
+
+                console.log("go if: ", patches[key])
+
+                copy[key] = If.patch(copy[key], patches[key])
+            } else {
+                copy[key] = patches[key]
+            }
+        })
+
+        return copy
+    },
+    detect(it) {
+        return Array.isArray(it)
+    }
+}
+
+
+// function applyPatchesToCachedSD(cached, patches) /*new sd*/ {
+//     const copy = {...cached }
+
+
+//     Object.keys(patches).forEach(k => {
+//         // if (set(copy.d[i].ds)) {
+//         // console.log("FOR PATCH")
+//         // } else 
+//         if (If.detect(patches[k])) {
+//             copy.d[k] = If.patch(copy.d[k], patches[k])
+//         } else {
+//             copy.d[k] = patches[k]
+//         }
+//     })
+
+//     return copy
+// }
 
 
 
 const set = x => x !== undefined
-
-function isIf(d) {
-    return set(d.c) || set(d.t) || set(d.f) || set(d.d)
-}
-
-function patchIf(old, new_) {
-
-    let d = set(new_.d) ? new_.d : old.d
-
-    // reset the dynamics, if condition changed (meaning, the other statics are rendered), and no new dynamics were provided
-    if (set(new_.c)) {
-        const conditionChanged = old.c != new_.c
-        d = set(new_.d) ? new_.d : []
-    }
-
-
-    const ret = {
-        c: set(new_.c) ? new_.c : old.c,
-        t: set(new_.t) ? new_.t : old.t,
-        f: set(new_.f) ? new_.f : old.f,
-        d: d,
-    }
-
-    Object.assign(globalThis, { lastPatch: ret })
-
-    return ret
-
-}
 },{"amgio_web":3,"morphdom":2}],2:[function(require,module,exports){
 'use strict';
 

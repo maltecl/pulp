@@ -3,13 +3,11 @@ package amigo
 import (
 	"fmt"
 	"strings"
-
-	"github.com/google/go-cmp/cmp"
 )
 
 type StaticDynamic struct {
-	Static  []string      `json:"s"`
-	Dynamic []interface{} `json:"d"`
+	Static  []string `json:"s"`
+	Dynamic Dynamics `json:"d"`
 }
 
 func NewStaticDynamic(format string, dynamics ...interface{}) StaticDynamic {
@@ -30,9 +28,9 @@ func (s StaticDynamic) String() string {
 				ifStr := ""
 
 				if *r.Condition {
-					ifStr = StaticDynamic{r.StaticTrue, r.Dynamic}.String()
+					ifStr = r.True.String()
 				} else {
-					ifStr = StaticDynamic{r.StaticFalse, r.Dynamic}.String()
+					ifStr = r.False.String()
 				}
 				res.WriteString(ifStr)
 
@@ -57,65 +55,72 @@ func Comparable(sd1, sd2 StaticDynamic) bool {
 	return len(sd1.Dynamic) == len(sd2.Dynamic) && len(sd1.Static) == len(sd2.Static)
 }
 
-type Patches map[int]interface{}
+// type Patches map[int]interface{}
 
-func Diff(sd1, sd2 StaticDynamic) (*Patches, bool) {
-	needsPatch, err := diff(sd1.Dynamic, sd2.Dynamic)
-	if err != nil {
-		return nil, false
-	}
+// func Diff(sd1, sd2 StaticDynamic) (*Patches, bool) {
+// 	needsPatch, err := diff(sd1.Dynamic, sd2.Dynamic)
+// 	if err != nil {
+// 		return nil, false
+// 	}
 
-	nonEmptyPatch := len(needsPatch) != 0
+// 	nonEmptyPatch := len(needsPatch) != 0
 
-	patches := Patches{}
-	for _, patchIndex := range needsPatch {
-		patch := sd2.Dynamic[patchIndex]
+// 	patches := Patches{}
+// 	for _, patchIndex := range needsPatch {
+// 		patch := sd2.Dynamic[patchIndex]
 
-		switch new_ := patch.(type) {
-		case IfTemplate:
-			old := sd1.Dynamic[patchIndex].(IfTemplate)
+// 		switch new_ := patch.(type) {
+// 		case IfTemplate:
+// 			old := sd1.Dynamic[patchIndex].(IfTemplate)
 
-			diff := IfTemplate{}
-			if *old.Condition != *new_.Condition {
-				fmt.Println("was here!")
+// 			diff := IfTemplate{}
+// 			if *old.Condition != *new_.Condition {
+// 				fmt.Println("was here!")
 
-				diff.Condition = new_.Condition
-			}
+// 				diff.Condition = new_.Condition
+// 			}
 
-			if !cmp.Equal(old.Dynamic, new_.Dynamic) {
-				// TODO: do diffing here too. maybe make diff() more general (it does not use the static part) and reuse it here
-				diff.Dynamic = new_.Dynamic
-			}
+// 			if *new_.Condition {
+// 				if !cmp.Equal(old.True.Dynamic, new_.True.Dynamic) {
+// 					diff.True.Dynamic = new_.True.Dynamic
+// 				}
+// 			} else {
+// 				if !cmp.Equal(old.False.Dynamic, new_.False.Dynamic) {
+// 					diff.False.Dynamic = new_.False.Dynamic
+// 				}
+// 			}
 
-			patches[patchIndex] = diff
+// 			if !cmp.Equal(diff, IfTemplate{}) {
+// 				patches[patchIndex] = diff
+// 			}
 
-		default:
-			_ = new_
-			patches[patchIndex] = patch
-		}
+// 		default:
+// 			_ = new_
+// 			patches[patchIndex] = patch
+// 		}
 
-	}
+// 	}
 
-	return &patches, nonEmptyPatch
-}
+// 	return &patches, nonEmptyPatch
+// }
 
 // TODO applies to many patches?
-func diff(d1, d2 []interface{}) ([]int, error) {
-	if len(d1) != len(d2) {
-		return []int{}, fmt.Errorf(("err 1"))
-	}
+// func diff(d1, d2 []interface{}) ([]int, error) {
+// 	if len(d1) != len(d2) {
+// 		return []int{}, fmt.Errorf(("err 1"))
+// 	}
 
-	ret := make([]int, 0, len(d1))
+// 	ret := make([]int, 0, len(d1))
 
-	for i := 0; i < len(d1); i++ {
-		if !cmp.Equal(d1[i], d2[i]) {
-			ret = append(ret, i)
-		}
+// 	for i := 0; i < len(d1); i++ {
+// 		if !cmp.Equal(d1[i], d2[i]) {
+// 			ret = append(ret, i)
+// 		}
 
-	}
+// 	}
 
-	return ret, nil
-}
+// 	return ret, nil
+// }
 
 // this is here for the typechecker,
 // every call to this function will be replaced by generated code
@@ -198,16 +203,17 @@ func _() string {
 
 	cond0 := post != nil
 	arg0 := IfTemplate{
-		Condition:   &cond0,
-		StaticTrue:  PartialStatic("{{post.title}} - {{post.body}}"),
-		StaticFalse: PartialStatic(""),
+		Condition: &cond0,
+		True: StaticDynamic{
+			Static: PartialStatic("{{post.title}} - {{post.body}}"),
+		},
+		False: StaticDynamic{
+			Static: PartialStatic(""),
+		},
 	}
 
-	if *arg0.Condition {
-		arg0.Dynamic = []interface{}{post.title, post.body}
-	} else {
-		arg0.Dynamic = []interface{}{}
-	}
+	arg0.True.Dynamic = []interface{}{post.title, post.body}
+	arg0.False.Dynamic = []interface{}{}
 
 	_ = StaticDynamic{
 		Static:  []string{"hello", "world"},
@@ -229,10 +235,14 @@ func _() string {
 }
 
 type IfTemplate struct {
-	Condition   *bool         `json:"c,omitempty"`
-	StaticTrue  []string      `json:"t,omitempty"`
-	StaticFalse []string      `json:"f,omitempty"`
-	Dynamic     []interface{} `json:"d,omitempty"`
+	Condition *bool `json:"c,omitempty"`
+
+	True  StaticDynamic `json:"t,omitempty"`
+	False StaticDynamic `json:"f,omitempty"`
+
+	// StaticTrue  []string      `json:"t,omitempty"`
+	// StaticFalse []string      `json:"f,omitempty"`
+	// Dynamic     []interface{} `json:"d,omitempty"`
 }
 
 func _() string {

@@ -57,3 +57,58 @@ func (c MyComponent) Render() string {
 	`
 
 }
+
+
+
+
+// Patches can point to actual value itself or another layer of Patches
+type Patches map[string]interface{}
+
+func (p Patches) IsEmpty() bool {
+	return len(map[string]interface{}(p)) == 0
+}
+
+type Diffable interface{
+	Diff(new interace{}) *Patches
+}
+
+
+// Dynamics can be filled by actual values or itself by other Diffables
+type Dynamics []interface{}
+
+var _ = Dynamics{0, 1}
+
+func (d *Dynamics) Diff(new interface{}) *Patches {
+	new_ := new.(Dynamics) 
+
+
+	if len(d1) != len(d2) {
+		log.Fatalf("expected equal length in Dynamics")
+		return nil
+	}
+
+	ret := Patches{}
+
+	for i := 0; i < len(d1); i++ {
+		if d1Diffable, isDiffable := d1[i].(Diffable), isDiffable {
+			if diff := d1Diffable.Diff(d2[i]); diff != nil {
+				ret[fmt.Sprint(i)] = diff
+			}
+		} else {
+			if !cmp.Equal(d1[i], d2[i]) {
+				ret[fmt.Sprint(i)] = d2[i]
+			}
+		}
+	}
+
+	if ret.IsEmpty() { // does this yield the length of keys in the map?
+		return nil
+	}
+
+	return ret
+}
+
+
+
+
+

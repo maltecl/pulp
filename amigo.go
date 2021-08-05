@@ -3,6 +3,7 @@ package amigo
 import (
 	"context"
 	"fmt"
+	"log"
 )
 
 type Assigns map[string]interface{}
@@ -83,19 +84,17 @@ func New(ctx context.Context, component LiveComponent, events chan Event, errors
 			}
 
 			newRender := component.Render()
-			patches, patchesNotEmpty := Diff(lastRender, newRender)
+			patches := lastRender.Dynamic.Diff(newRender.Dynamic)
 			if patches == nil {
-				errors <- fmt.Errorf("nil patches")
-				return
+				log.Println("empty patches")
+				continue
 			}
 
-			if patchesNotEmpty {
-				lastRender = newRender
-				select {
-				case <-ctx.Done():
-					break outer
-				case patchesStream <- *patches:
-				}
+			lastRender = newRender
+			select {
+			case <-ctx.Done():
+				break outer
+			case patchesStream <- *patches:
 			}
 		}
 	}()

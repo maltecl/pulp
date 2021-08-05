@@ -61,26 +61,24 @@ func (t TestSite) Render() amigo.StaticDynamic {
 
 	cond0 := len(t.Username) > 5
 	arg0 := amigo.IfTemplate{
-		Condition:   &cond0,
-		StaticTrue:  []string{"hello world: ", ""},
-		StaticFalse: []string{"<span>count:", "</span> // <span>", "</span>"},
+		Condition: &cond0,
+		True: amigo.StaticDynamic{
+			Static:  []string{"hello world: ", ""},
+			Dynamic: []interface{}{10},
+		},
+		False: amigo.StaticDynamic{
+			Static:  []string{"<span>count:", "</span> // <span>", "</span>"},
+			Dynamic: []interface{}{t.Nested.X, t.Nested.Y},
+		},
 	}
 
-	if *arg0.Condition { // this is cool, as it prevents silly rerenders, when the condition stays the same, but the dynamic value for the other case changes.
+	// arg1 := amigo.ForTemplate{
+	// 	Static: []string{"<h3>title: ", "</h3> <h5>body: ", "</h5>"},
+	// }
 
-		// TODO: use two seperate staticdynamic pairs, so that this 10 is not sent across the wire, everytime the condition flips to true
-		arg0.Dynamic = []interface{}{10}
-	} else {
-		arg0.Dynamic = []interface{}{t.Nested.X, t.Nested.Y}
-	}
-
-	arg1 := amigo.ForTemplate{
-		Static: []string{"<h3>title: ", "</h3> <h5>body: ", "</h5>"},
-	}
-
-	arg1.Dynamics = make([][]interface{}, 0)
-	arg1.Dynamics = append(arg1.Dynamics, []interface{}{": )", "good music"})
-	arg1.Dynamics = append(arg1.Dynamics, []interface{}{"duster rocks", "i love duster"})
+	// arg1.Dynamics = make([][]interface{}, 0)
+	// arg1.Dynamics = append(arg1.Dynamics, []interface{}{": )", "good music"})
+	// arg1.Dynamics = append(arg1.Dynamics, []interface{}{"duster rocks", "i love duster"})
 
 	return amigo.NewStaticDynamic(
 		`text: <h4>{}</h4>
@@ -98,7 +96,7 @@ func (t TestSite) Render() amigo.StaticDynamic {
 		t.Username,
 		t.Age,
 		arg0,
-		arg1,
+		// arg1,
 	)
 }
 
