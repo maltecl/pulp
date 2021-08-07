@@ -2,6 +2,7 @@ module.exports = class Amigo {
     static CLICK = "amigo-click"
     static INPUT = "amigo-input"
     static VALUES = "amigo-value"
+    static SUBMIT = "amigo-submit"
 
 
     static addHandlersForElementNames = {
