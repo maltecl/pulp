@@ -15,7 +15,11 @@ func (s StaticDynamic) Render() string {
 
 		if ok := i < len(s.Dynamic); ok {
 
-			switch r := s.Dynamic[i].(type) {
+			switch r := s.Dynamic[i].(type) { // TODO: remove this switch and instead check if the type implements RenderDiff and use that Render method if this is the case
+
+			case For:
+				res.WriteString(r.Render())
+
 			case IfTemplate:
 				ifStr := ""
 
@@ -27,6 +31,8 @@ func (s StaticDynamic) Render() string {
 				res.WriteString(ifStr)
 
 			case ForTemplate:
+				notreached()
+
 				forStr := strings.Builder{}
 
 				for _, dynamic := range r.Dynamics {
@@ -43,6 +49,10 @@ func (s StaticDynamic) Render() string {
 	return res.String()
 }
 
+func notreached() {
+	panic("should not be reached")
+}
+
 // Patches can point to actual value itself or another layer of Patches
 type Patches map[string]interface{}
 
@@ -52,6 +62,15 @@ func (p Patches) IsEmpty() bool {
 
 type Diffable interface {
 	Diff(new interface{}) *Patches
+}
+
+type Renderable interface {
+	Render() string
+}
+
+type RenderDiff interface {
+	Diffable
+	Renderable
 }
 
 // Dynamics can be filled by actual values or itself by other Diffables
@@ -87,7 +106,7 @@ func (d Dynamics) Diff(new interface{}) *Patches {
 	return &ret
 }
 
-var _ Diffable = &If{}
+var _ Diffable = If{}
 
 type If struct {
 	Condition bool          `json:"c"`
@@ -119,4 +138,57 @@ func (old If) Diff(new interface{}) *Patches {
 	}
 
 	return &patches
+}
+
+var _ RenderDiff = For{}
+
+type For struct {
+	Statics      []string   `json:"s"`
+	ManyDynamics []Dynamics `json:"ds"`
+	DiffStrategy `json:"strategy"`
+}
+
+type DiffStrategy uint8
+
+const (
+	Append DiffStrategy = iota
+	Prepend
+)
+
+func (f For) Render() string {
+	str := strings.Builder{}
+
+	for _, dynamics := range f.ManyDynamics {
+		str.WriteString(StaticDynamic{f.Statics, dynamics}.Render())
+	}
+
+	return str.String()
+}
+
+func (old For) Diff(new interface{}) *Patches {
+	new_ := new.(For)
+
+	patches := Patches{}
+
+	for i, dynamics := range old.ManyDynamics {
+		if diff := dynamics.Diff(new_.ManyDynamics[i]); diff != nil {
+			patches[fmt.Sprint(i)] = diff
+		}
+	}
+
+	if hasNewElements := len(old.ManyDynamics) < len(new_.ManyDynamics); hasNewElements {
+		base := len(old.ManyDynamics)
+		newElements := new_.ManyDynamics[base:]
+		for i, dynamics := range newElements {
+			patches[fmt.Sprint(i+base)] = dynamics
+		}
+	}
+
+	if patches.IsEmpty() {
+		return nil
+	}
+
+	return &Patches{
+		"ds": patches,
+	}
 }

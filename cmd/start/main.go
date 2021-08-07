@@ -79,7 +79,7 @@ func main() {
 
 		ctx, canc := context.WithCancel(context.Background())
 
-		patchesStream := amigo.New(ctx, &Simple3{}, events, errors, onMount)
+		patchesStream := amigo.New(ctx, &Simple4{}, events, errors, onMount)
 
 		// send mount message
 
