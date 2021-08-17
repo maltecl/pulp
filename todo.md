@@ -7,6 +7,8 @@
   - this dependency should only be sent **once**! with the big payload upon mount. In patches value `"1"` can be derived from `"0"`
 
 
+rename to `pulp`
+
 ## If
   - make it so that when the condition is `True` the dynamic values for the `False` `StaticDynamic` are not sent. 
   - When the condition later flips, those dynamic values are sent 
