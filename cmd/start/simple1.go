@@ -1,10 +1,8 @@
 package main
 
-import (
-	"amigo"
-)
+import "pulp"
 
-var _ amigo.LiveComponent = &Simple1{}
+var _ pulp.LiveComponent = &Simple1{}
 
 type Simple1 struct {
 	Username string
@@ -14,7 +12,7 @@ type Simple1 struct {
 	}
 }
 
-func (t *Simple1) Mount(socket amigo.Socket) {
+func (t *Simple1) Mount(socket pulp.Socket) {
 	t.Username = "Donald Duck"
 	t.Age = 14
 
@@ -28,7 +26,7 @@ func (t *Simple1) Mount(socket amigo.Socket) {
 	socket.Changes(t).Do()
 }
 
-func (t *Simple1) HandleEvent(event amigo.Event, socket amigo.Socket) {
+func (t *Simple1) HandleEvent(event pulp.Event, socket pulp.Socket) {
 
 	switch event.Name {
 	case "inc":
@@ -38,8 +36,8 @@ func (t *Simple1) HandleEvent(event amigo.Event, socket amigo.Socket) {
 	socket.Changes(t).Do()
 }
 
-func (t Simple1) Render() amigo.StaticDynamic {
-	return amigo.NewStaticDynamic(
+func (t Simple1) Render() pulp.StaticDynamic {
+	return pulp.NewStaticDynamic(
 		`<h4>text: {}</h4>
 		<p>{}</p>
 		<button amigo-click="inc"> increment </button>`,

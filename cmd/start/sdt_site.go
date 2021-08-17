@@ -1,11 +1,11 @@
 package main
 
 import (
-	"amigo"
+	"pulp"
 	"time"
 )
 
-var _ amigo.LiveComponent = &TestSite{}
+var _ pulp.LiveComponent = &TestSite{}
 
 type TestSite struct {
 	Username string
@@ -15,7 +15,7 @@ type TestSite struct {
 	}
 }
 
-func (t *TestSite) Mount(socket amigo.Socket) {
+func (t *TestSite) Mount(socket pulp.Socket) {
 	t.Username = "Donald Duck"
 	t.Age = 14
 
@@ -37,7 +37,7 @@ func (t *TestSite) Mount(socket amigo.Socket) {
 	socket.Changes(t).Do()
 }
 
-func (t *TestSite) HandleEvent(event amigo.Event, socket amigo.Socket) {
+func (t *TestSite) HandleEvent(event pulp.Event, socket pulp.Socket) {
 
 	// if t.Age%2 == 0 {
 	// 	t.Username += ", Donald"
@@ -57,22 +57,22 @@ func (t *TestSite) HandleEvent(event amigo.Event, socket amigo.Socket) {
 	socket.Changes(t).Do()
 }
 
-func (t TestSite) Render() amigo.StaticDynamic {
+func (t TestSite) Render() pulp.StaticDynamic {
 
 	cond0 := len(t.Username) > 5
-	arg0 := amigo.IfTemplate{
+	arg0 := pulp.IfTemplate{
 		Condition: &cond0,
-		True: amigo.StaticDynamic{
+		True: pulp.StaticDynamic{
 			Static:  []string{"hello world: ", ""},
 			Dynamic: []interface{}{10},
 		},
-		False: amigo.StaticDynamic{
+		False: pulp.StaticDynamic{
 			Static:  []string{"<span>count:", "</span> // <span>", "</span>"},
 			Dynamic: []interface{}{t.Nested.X, t.Nested.Y},
 		},
 	}
 
-	// arg1 := amigo.ForTemplate{
+	// arg1 := pulp.ForTemplate{
 	// 	Static: []string{"<h3>title: ", "</h3> <h5>body: ", "</h5>"},
 	// }
 
@@ -80,7 +80,7 @@ func (t TestSite) Render() amigo.StaticDynamic {
 	// arg1.Dynamics = append(arg1.Dynamics, []interface{}{": )", "good music"})
 	// arg1.Dynamics = append(arg1.Dynamics, []interface{}{"duster rocks", "i love duster"})
 
-	return amigo.NewStaticDynamic(
+	return pulp.NewStaticDynamic(
 		`text: <h4>{}</h4>
 		<button amigo-click="increment">increment</button>
 		<button amigo-click="reset">reset</button>

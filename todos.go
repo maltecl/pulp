@@ -1,4 +1,4 @@
-package amigo
+package pulp
 
 // var _ LiveComponent = &TodosComponent{}
 

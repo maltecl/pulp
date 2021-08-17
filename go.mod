@@ -1,4 +1,4 @@
-module amigo
+module pulp
 
 go 1.16
 

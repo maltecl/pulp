@@ -1,13 +1,13 @@
 package main
 
 import (
-	"amigo"
 	"fmt"
 	"os"
+	"pulp"
 	"time"
 )
 
-var _ amigo.LiveComponent = &Simple4{}
+var _ pulp.LiveComponent = &Simple4{}
 
 type post struct {
 	title, body string
@@ -19,7 +19,7 @@ type Simple4 struct {
 	posts []post
 }
 
-func (t *Simple4) Mount(socket amigo.Socket) {
+func (t *Simple4) Mount(socket pulp.Socket) {
 
 	t.posts = []post{
 		{"post 1", "body 1"},
@@ -70,21 +70,21 @@ func (t *Simple4) Mount(socket amigo.Socket) {
 	socket.Changes(t).Do()
 }
 
-func (t *Simple4) HandleEvent(event amigo.Event, socket amigo.Socket) {}
+func (t *Simple4) HandleEvent(event pulp.Event, socket pulp.Socket) {}
 
-func (t Simple4) Render() amigo.StaticDynamic {
+func (t Simple4) Render() pulp.StaticDynamic {
 
-	arg0 := amigo.For{
+	arg0 := pulp.For{
 		Statics:      []string{"<h3>", "</h3> <p>", "</p>"},
-		ManyDynamics: make([]amigo.Dynamics, len(t.posts)),
-		DiffStrategy: amigo.Append,
+		ManyDynamics: make([]pulp.Dynamics, len(t.posts)),
+		DiffStrategy: pulp.Append,
 	}
 
 	for i, post := range t.posts {
-		arg0.ManyDynamics[i] = amigo.Dynamics{post.title, post.body}
+		arg0.ManyDynamics[i] = pulp.Dynamics{post.title, post.body}
 	}
 
-	return amigo.NewStaticDynamic(
+	return pulp.NewStaticDynamic(
 		`ticks: <span> {} </span>
 		
 		posts:

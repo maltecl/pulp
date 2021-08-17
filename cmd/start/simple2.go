@@ -1,10 +1,8 @@
 package main
 
-import (
-	"amigo"
-)
+import "pulp"
 
-var _ amigo.LiveComponent = &Simple2{}
+var _ pulp.LiveComponent = &Simple2{}
 
 type Simple2 struct {
 	Username string
@@ -14,7 +12,7 @@ type Simple2 struct {
 	}
 }
 
-func (t *Simple2) Mount(socket amigo.Socket) {
+func (t *Simple2) Mount(socket pulp.Socket) {
 	t.Username = "Donald Duck"
 	t.Age = 14
 
@@ -28,7 +26,7 @@ func (t *Simple2) Mount(socket amigo.Socket) {
 	socket.Changes(t).Do()
 }
 
-func (t *Simple2) HandleEvent(event amigo.Event, socket amigo.Socket) {
+func (t *Simple2) HandleEvent(event pulp.Event, socket pulp.Socket) {
 
 	switch event.Name {
 	case "inc":
@@ -42,32 +40,32 @@ func (t *Simple2) HandleEvent(event amigo.Event, socket amigo.Socket) {
 	socket.Changes(t).Do()
 }
 
-func (t Simple2) Render() amigo.StaticDynamic {
+func (t Simple2) Render() pulp.StaticDynamic {
 
-	var arg0 interface{} = amigo.If{
+	var arg0 interface{} = pulp.If{
 		Condition: t.Age > 10,
-		True: amigo.StaticDynamic{
+		True: pulp.StaticDynamic{
 			Static:  []string{"<h4>name: ", "</h4>"},
-			Dynamic: amigo.Dynamics{t.Username},
+			Dynamic: pulp.Dynamics{t.Username},
 		},
-		False: amigo.StaticDynamic{
+		False: pulp.StaticDynamic{
 			Static: []string{"hello world"},
 		},
 	}
 
-	var arg1 interface{} = amigo.If{
+	var arg1 interface{} = pulp.If{
 		Condition: t.Age > 10,
-		True: amigo.StaticDynamic{
+		True: pulp.StaticDynamic{
 			Static:  []string{"<h4>name: ", "</h4>"},
-			Dynamic: amigo.Dynamics{t.Username},
+			Dynamic: pulp.Dynamics{t.Username},
 		},
-		False: amigo.StaticDynamic{
+		False: pulp.StaticDynamic{
 			Static:  []string{"<p>", "</p>"},
-			Dynamic: amigo.Dynamics{t.Age},
+			Dynamic: pulp.Dynamics{t.Age},
 		},
 	}
 
-	return amigo.NewStaticDynamic(
+	return pulp.NewStaticDynamic(
 		`
 		<input type="text" value="{}" amigo-input="username">{}</input>
 		<p>{}</p>

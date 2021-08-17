@@ -2,7 +2,7 @@
     "name": "amgio_web",
     "version": "1.0.0",
     "description": "",
-    "main": "amigo.js",
+    "main": "pulp.js",
     "scripts": {
         "build": "browserify index.js > bundle/bundle.js",
         "test": "echo \"Error: no test specified\""

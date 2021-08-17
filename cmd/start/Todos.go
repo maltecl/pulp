@@ -1,10 +1,8 @@
 package main
 
-import (
-	"amigo"
-)
+import "pulp"
 
-var _ amigo.LiveComponent = &TodoPage{}
+var _ pulp.LiveComponent = &TodoPage{}
 
 type TodoPage struct {
 	InputValue string
@@ -14,11 +12,11 @@ type TodoPage struct {
 
 type todo struct{ title string }
 
-func (t *TodoPage) Mount(socket amigo.Socket) {
+func (t *TodoPage) Mount(socket pulp.Socket) {
 	socket.Changes(t).Do()
 }
 
-func (t *TodoPage) HandleEvent(event amigo.Event, socket amigo.Socket) {
+func (t *TodoPage) HandleEvent(event pulp.Event, socket pulp.Socket) {
 
 	switch event.Name {
 
@@ -34,18 +32,18 @@ func (t *TodoPage) HandleEvent(event amigo.Event, socket amigo.Socket) {
 
 }
 
-func (t TodoPage) Render() amigo.StaticDynamic {
+func (t TodoPage) Render() pulp.StaticDynamic {
 
-	arg0 := amigo.For{
+	arg0 := pulp.For{
 		Statics:      []string{"<li>", "</li>"},
-		ManyDynamics: make([]amigo.Dynamics, len(t.todos)),
+		ManyDynamics: make([]pulp.Dynamics, len(t.todos)),
 	}
 
 	for i, todo := range t.todos {
-		arg0.ManyDynamics[i] = amigo.Dynamics{todo.title}
+		arg0.ManyDynamics[i] = pulp.Dynamics{todo.title}
 	}
 
-	return amigo.NewStaticDynamic(
+	return pulp.NewStaticDynamic(
 		`<input amigo-input="changed" type="text" value="{}"> <button amigo-click="submit"> go </button>
 		
 		</br>

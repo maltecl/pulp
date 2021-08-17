@@ -1,12 +1,12 @@
 package main
 
 import (
-	"amigo"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"pulp"
 
 	"github.com/gorilla/websocket"
 	"github.com/kr/pretty"
@@ -25,7 +25,7 @@ func init() {
 
 func init() {
 
-	// pretty.Println(amigo.Diff(amigo.StaticDynamic{Dynamic: []interface{}{"hello", "malte"}}, amigo.StaticDynamic{Dynamic: []interface{}{"hello", "donald"}}))
+	// pretty.Println(pulp.Diff(pulp.StaticDynamic{Dynamic: []interface{}{"hello", "malte"}}, pulp.StaticDynamic{Dynamic: []interface{}{"hello", "donald"}}))
 	// os.Exit(1)
 
 	// tt, err := template.New("test").Parse(`
@@ -74,12 +74,12 @@ func main() {
 			return
 		}
 
-		events := make(chan amigo.Event)
-		onMount := make(chan amigo.StaticDynamic)
+		events := make(chan pulp.Event)
+		onMount := make(chan pulp.StaticDynamic)
 
 		ctx, canc := context.WithCancel(context.Background())
 
-		patchesStream := amigo.New(ctx, &TodoPage{}, events, errors, onMount)
+		patchesStream := pulp.New(ctx, &TodoPage{}, events, errors, onMount)
 
 		// send mount message
 
@@ -127,14 +127,14 @@ func main() {
 		// 		if err != nil {
 		// 			errors <- err
 		// 		}
-		// 		events <- amigo.Event{Name: "event1"}
+		// 		events <- pulp.Event{Name: "event1"}
 		// 	}
 		// }()
 
-		// events <- amigo.Event{Name: "event1"}
-		// events <- amigo.Event{Name: "event1"}
-		// events <- amigo.Event{Name: "event1"}
-		// events <- amigo.Event{Name: "event1"}
+		// events <- pulp.Event{Name: "event1"}
+		// events <- pulp.Event{Name: "event1"}
+		// events <- pulp.Event{Name: "event1"}
+		// events <- pulp.Event{Name: "event1"}
 
 		go func() {
 			for {
@@ -157,7 +157,7 @@ func main() {
 				select {
 				case <-ctx.Done():
 					return
-				case events <- amigo.Event{Name: t, Data: msg}:
+				case events <- pulp.Event{Name: t, Data: msg}:
 				}
 			}
 

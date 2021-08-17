@@ -6,13 +6,13 @@ module.exports = class Amigo {
 
 
     static addHandlersForElementNames = {
-        "HTMLButtonElement": (node) => Amigo.addHandler(node, Amigo.CLICK, "click"),
-        "HTMLInputElement": (node) => Amigo.addHandler(node, Amigo.INPUT, "input", (node, e) => (["value", node.value])),
+        "HTMLButtonElement": (node) => pulp.addHandler(node, pulp.CLICK, "click"),
+        "HTMLInputElement": (node) => pulp.addHandler(node, pulp.INPUT, "input", (node, e) => (["value", node.value])),
     }
 
     static removeHandlersForElementNames = {
-        "HTMLButtonElement": (node) => Amigo.addHandler(node, Amigo.CLICK, "click"),
-        "HTMLInputElement": (node) => Amigo.addHandler(node, Amigo.INPUT, "input"),
+        "HTMLButtonElement": (node) => pulp.addHandler(node, pulp.CLICK, "click"),
+        "HTMLInputElement": (node) => pulp.addHandler(node, pulp.INPUT, "input"),
     }
 
     static handlerForNode(node, amigoAttr, includeValues) {
@@ -34,7 +34,7 @@ module.exports = class Amigo {
                 payload = {...payload, [key]: value }
             })
 
-            const value = node.getAttribute(Amigo.VALUES)
+            const value = node.getAttribute(pulp.VALUES)
             if (value !== null && value.trim().length !== 0) {
                 payload = {...payload, value: value }
             }
@@ -45,13 +45,13 @@ module.exports = class Amigo {
 
     static addHandler(node, amigoAttr, eventType, ...includeValues) {
         if (node.hasAttribute(amigoAttr)) {
-            node.addEventListener(eventType, Amigo.handlerForNode(node, amigoAttr, includeValues))
+            node.addEventListener(eventType, pulp.handlerForNode(node, amigoAttr, includeValues))
         }
     }
 
     static removeHandler(node, amigoAttr, eventType) {
         if (node.hasAttribute(amigoAttr)) {
-            node.removeEventListener(eventType, Amigo.handlerForNode(node, amigoAttr))
+            node.removeEventListener(eventType, pulp.handlerForNode(node, amigoAttr))
         }
     }
 }
