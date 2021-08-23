@@ -11,7 +11,7 @@ const morphdomHooks = {
         return node;
     },
     onNodeAdded: function(node) {
-        const maybeHandler = pulp.addHandlersForElementNames[node.constructor.name]
+        const maybeHandler = Amigo.addHandlersForElementNames[node.constructor.name]
         maybeHandler && maybeHandler(node)
     },
     onBeforeElUpdated: function(fromEl, toEl) {
@@ -24,7 +24,7 @@ const morphdomHooks = {
         return true;
     },
     onNodeDiscarded: function(node) {
-        const maybeHandler = pulp.removeHandlersForElementNames[node.constructor.name]
+        const maybeHandler = Amigo.removeHandlersForElementNames[node.constructor.name]
         maybeHandler && maybeHandler(node)
     },
     onBeforeElChildrenUpdated: function(fromEl, toEl) {

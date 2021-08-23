@@ -79,7 +79,7 @@ func main() {
 
 		ctx, canc := context.WithCancel(context.Background())
 
-		patchesStream := pulp.New(ctx, &TodoPage{}, events, errors, onMount)
+		patchesStream := pulp.New(ctx, &Simple2{}, events, errors, onMount)
 
 		// send mount message
 

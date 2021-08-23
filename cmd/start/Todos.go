@@ -59,4 +59,27 @@ func (t TodoPage) Render() pulp.StaticDynamic {
 	)
 }
 
+func _() pulp.StaticDynamic {
+
+	post := &struct {
+		title string
+		body  string
+	}{}
+
+	x1 := pulp.If{
+		Condition: post != nil,
+		True: pulp.StaticDynamic{
+			Static:  []string{"\n\t", " - ", "\n"},
+			Dynamic: pulp.Dynamics{post.title, post.body},
+		},
+		False: pulp.StaticDynamic{
+			Static:  []string{"\n\t20\n"},
+			Dynamic: pulp.Dynamics{},
+		},
+	}
+	x2 := pulp.NewStaticDynamic("\nhellodasdasdasd  asdasd\nasdsadasdas\n", x1)
+
+	return x2
+}
+
 func (TodoPage) Name() string { return "TodoPage" }
