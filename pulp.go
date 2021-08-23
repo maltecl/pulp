@@ -114,3 +114,11 @@ type WithAssets struct {
 	A Assets
 	C LiveComponent
 }
+
+type HTML interface{ HTML() }
+
+type L struct{ Out string }
+
+func (L) HTML() {}
+
+func (StaticDynamic) HTML() {}

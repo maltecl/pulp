@@ -124,9 +124,9 @@ func Comparable(sd1, sd2 StaticDynamic) bool {
 
 // this is here for the typechecker,
 // every call to this function will be replaced by generated code
-func L() StaticDynamic {
-	return StaticDynamic{}
-}
+// func L() StaticDynamic {
+// 	return StaticDynamic{}
+// }
 
 // notes:
 

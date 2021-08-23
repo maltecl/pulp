@@ -1,24 +1,24 @@
-module.exports = class Amigo {
-    static CLICK = "amigo-click"
-    static INPUT = "amigo-input"
-    static VALUES = "amigo-value"
-    static SUBMIT = "amigo-submit"
+module.exports = class Pulp {
+    static CLICK = "pulp-click"
+    static INPUT = "pulp-input"
+    static VALUES = "pulp-value"
+    static SUBMIT = "pulp-submit"
 
 
     static addHandlersForElementNames = {
-        "HTMLButtonElement": (node) => pulp.addHandler(node, pulp.CLICK, "click"),
-        "HTMLInputElement": (node) => pulp.addHandler(node, pulp.INPUT, "input", (node, e) => (["value", node.value])),
+        "HTMLButtonElement": (node) => Pulp.addHandler(node, Pulp.CLICK, "click"),
+        "HTMLInputElement": (node) => Pulp.addHandler(node, Pulp.INPUT, "input", (node, e) => (["value", node.value])),
     }
 
     static removeHandlersForElementNames = {
-        "HTMLButtonElement": (node) => pulp.addHandler(node, pulp.CLICK, "click"),
-        "HTMLInputElement": (node) => pulp.addHandler(node, pulp.INPUT, "input"),
+        "HTMLButtonElement": (node) => Pulp.addHandler(node, Pulp.CLICK, "click"),
+        "HTMLInputElement": (node) => Pulp.addHandler(node, Pulp.INPUT, "input"),
     }
 
-    static handlerForNode(node, amigoAttr, includeValues) {
+    static handlerForNode(node, pulpAttr, includeValues) {
         return (e) => {
             let payload = {
-                type: node.getAttribute(amigoAttr),
+                type: node.getAttribute(pulpAttr),
             }
 
 
@@ -34,7 +34,7 @@ module.exports = class Amigo {
                 payload = {...payload, [key]: value }
             })
 
-            const value = node.getAttribute(pulp.VALUES)
+            const value = node.getAttribute(Pulp.VALUES)
             if (value !== null && value.trim().length !== 0) {
                 payload = {...payload, value: value }
             }
@@ -43,15 +43,15 @@ module.exports = class Amigo {
         }
     }
 
-    static addHandler(node, amigoAttr, eventType, ...includeValues) {
-        if (node.hasAttribute(amigoAttr)) {
-            node.addEventListener(eventType, pulp.handlerForNode(node, amigoAttr, includeValues))
+    static addHandler(node, pulpAttr, eventType, ...includeValues) {
+        if (node.hasAttribute(pulpAttr)) {
+            node.addEventListener(eventType, Pulp.handlerForNode(node, pulpAttr, includeValues))
         }
     }
 
-    static removeHandler(node, amigoAttr, eventType) {
-        if (node.hasAttribute(amigoAttr)) {
-            node.removeEventListener(eventType, pulp.handlerForNode(node, amigoAttr))
+    static removeHandler(node, pulpAttr, eventType) {
+        if (node.hasAttribute(pulpAttr)) {
+            node.removeEventListener(eventType, Pulp.handlerForNode(node, pulpAttr))
         }
     }
 }
