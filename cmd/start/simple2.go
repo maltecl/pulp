@@ -40,7 +40,7 @@ func (t *Simple2) HandleEvent(event pulp.Event, socket pulp.Socket) {
 	socket.Changes(t).Do()
 }
 
-func (t Simple2) Render() pulp.StaticDynamic {
+func (t Simple2) Render() pulp.HTML {
 
 	x1 := t.Username
 	x2 := t.Username

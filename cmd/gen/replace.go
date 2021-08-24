@@ -8,6 +8,7 @@ import (
 	"go/token"
 	"pulp"
 
+	"github.com/kr/pretty"
 	"golang.org/x/tools/go/ast/astutil"
 )
 
@@ -18,6 +19,8 @@ func replace(sourceName, source string) ([]byte, error) {
 		return nil, err
 	}
 
+	pretty.Print(expr)
+
 	result := astutil.Apply(expr, func(cr *astutil.Cursor) bool {
 		if source := detect(cr.Node()); source != nil {
 			g := &pulp.Generator{}
@@ -26,7 +29,7 @@ func replace(sourceName, source string) ([]byte, error) {
 			return false
 		}
 		return true
-	}, nil) // Print result
+	}, nil)
 
 	retBuf := &bytes.Buffer{}
 	format.Node(retBuf, fset, result)
@@ -35,10 +38,10 @@ func replace(sourceName, source string) ([]byte, error) {
 }
 
 func detect(node ast.Node) *string {
-	if r, ok := node.(*ast.CompositeLit); ok {
-		if t, ok1 := r.Type.(*ast.SelectorExpr); ok1 {
+	if r, ok := node.(*ast.CallExpr); ok {
+		if t, ok1 := r.Fun.(*ast.SelectorExpr); ok1 {
 			if t.Sel.Name == "L" {
-				if sourceLit, ok2 := r.Elts[0].(*ast.BasicLit); ok2 {
+				if sourceLit, ok2 := r.Args[0].(*ast.BasicLit); ok2 {
 					return &sourceLit.Value
 				}
 			}

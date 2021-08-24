@@ -32,7 +32,7 @@ func (t *TodoPage) HandleEvent(event pulp.Event, socket pulp.Socket) {
 
 }
 
-func (t TodoPage) Render() pulp.StaticDynamic {
+func (t TodoPage) Render() pulp.HTML {
 
 	arg0 := pulp.For{
 		Statics:      []string{"<li>", "</li>"},

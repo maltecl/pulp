@@ -50,3 +50,26 @@ func (i *ifExpr) Gen(g *Generator) id {
 func (e rawStringExpr) Gen(g *Generator) id {
 	return g.WriteNamed(string(e) + "\n")
 }
+
+func (e forExpr) Gen(g *Generator) id {
+	return g.WriteNamedWithID(func(currentID id) string {
+		return fmt.Sprintf(`pulp.For{
+		Statics: %s,
+		ManyDynamics: make([]pulp.Dynamics, 0),
+		DiffStrategy: pulp.Append,
+	}
+
+	for %s {
+		%s.ManyDynamics = append(%s.ManyDynamics, pulp.Dynamics%s)
+	}
+	`, pretty.Sprint(e.static), e.rangeStr, string(currentID), string(currentID), sprintDynamic(e.dynamic))
+
+	})
+}
+
+func sprintDynamic(dynamics []string) string {
+	ret := fmt.Sprint(dynamics)
+	ret = strings.ReplaceAll(ret, " ", ", ")
+	ret = ret[1 : len(ret)-1]
+	return "{" + ret + "}"
+}

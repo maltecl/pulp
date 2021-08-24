@@ -36,7 +36,7 @@ func (t *Simple1) HandleEvent(event pulp.Event, socket pulp.Socket) {
 	socket.Changes(t).Do()
 }
 
-func (t Simple1) Render() pulp.StaticDynamic {
+func (t Simple1) Render() pulp.HTML {
 	return pulp.NewStaticDynamic(
 		`<h4>text: {}</h4>
 		<p>{}</p>

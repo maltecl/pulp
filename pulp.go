@@ -36,7 +36,7 @@ func (s Socket) Do() {
 
 type LiveComponent interface {
 	Mount(Socket)
-	Render() StaticDynamic
+	Render() HTML // guranteed to be StaticDynamic after code generation
 	HandleEvent(Event, Socket)
 	Name() string
 }
@@ -58,7 +58,7 @@ func New(ctx context.Context, component LiveComponent, events chan Event, errors
 		return nil
 	}
 
-	lastRender := component.Render()
+	lastRender := component.Render().(StaticDynamic)
 	go func() { onMount <- lastRender }()
 	// onMount is closed
 
@@ -83,7 +83,7 @@ func New(ctx context.Context, component LiveComponent, events chan Event, errors
 				component = socket.lastState
 			}
 
-			newRender := component.Render()
+			newRender := component.Render().(StaticDynamic)
 			patches := lastRender.Dynamic.Diff(newRender.Dynamic)
 			if patches == nil {
 				log.Println("empty patches")
@@ -117,8 +117,10 @@ type WithAssets struct {
 
 type HTML interface{ HTML() }
 
-type L struct{ Out string }
+func L(source string) LL { return LL{source} }
 
-func (L) HTML() {}
+type LL struct{ Out string }
+
+func (LL) HTML() {}
 
 func (StaticDynamic) HTML() {}

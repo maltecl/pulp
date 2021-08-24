@@ -7,7 +7,13 @@
   - this dependency should only be sent **once**! with the big payload upon mount. In patches value `"1"` can be derived from `"0"`
 
 
-rename to `pulp`
+
+## Json Path
+  - use json path for slimmer patches
+
+
+## run go import on the output file
+
 
 ## If
   - make it so that when the condition is `True` the dynamic values for the `False` `StaticDynamic` are not sent. 

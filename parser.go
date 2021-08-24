@@ -24,6 +24,12 @@ func (g *Generator) WriteNamed(source string) id {
 	return ident
 }
 
+func (g *Generator) WriteNamedWithID(source func(id) string) id {
+	ident := g.nextID()
+	g.sourceWriter.WriteString(string(ident) + " := " + source(ident))
+	return ident
+}
+
 func (g Generator) Out() string {
 	return fmt.Sprintf(`func() pulp.StaticDynamic {
 	%s
@@ -106,7 +112,8 @@ type expr interface {
 type parserFunc func(p *parser) expr
 
 var parserMap = map[string]parserFunc{
-	"if": parseIf,
+	"for": parseFor,
+	"if":  parseIf,
 }
 
 type rawStringExpr string
@@ -128,13 +135,6 @@ type ifExpr struct {
 	condStr string
 	True    staticDynamicExpr
 	False   staticDynamicExpr
-}
-
-func sprintDynamic(dynamics []string) string {
-	ret := fmt.Sprint(dynamics)
-	ret = strings.ReplaceAll(ret, " ", ", ")
-	ret = ret[1 : len(ret)-1]
-	return "{" + ret + "}"
 }
 
 func parseIf(p *parser) expr {
@@ -180,4 +180,32 @@ func parseIf(p *parser) expr {
 	}
 
 	return &ret
+}
+
+type forExpr struct {
+	rangeStr string
+	static   []string
+	dynamic  []string
+}
+
+func parseFor(p *parser) expr {
+	ret := forExpr{}
+	ret.rangeStr = p.last.value[len("for "):]
+
+	for {
+		next := p.next()
+
+		if p.lastTrimmed.value == "end" {
+			break
+		}
+
+		if next.typ == tokGoSource {
+			ret.dynamic = append(ret.dynamic, p.lastTrimmed.value)
+		} else if next.typ == tokOtherSource {
+			ret.static = append(ret.static, next.value)
+		} else {
+			notreached()
+		}
+	}
+	return ret
 }

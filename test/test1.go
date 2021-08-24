@@ -1,10 +1,12 @@
+// +build exclude
+
 package pulp
 
 import "pulp"
 
-func testFunc() {
+func testFunc() pulp.HTML {
 
-	return pulp.L{`
+	return pulp.L(`
 	<input type="text" value="{{t.Username}}" amigo-input="username">{{t.Username}}}</input>
 	<p>{{t.Age}}</p>
 	<button amigo-click="inc"> increment </button>
@@ -25,6 +27,6 @@ func testFunc() {
 	{{end}}
 
 
-	`}
+	`)
 
 }

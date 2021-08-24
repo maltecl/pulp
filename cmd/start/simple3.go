@@ -40,7 +40,7 @@ func (t *Simple3) HandleEvent(event pulp.Event, socket pulp.Socket) {
 	socket.Changes(t).Do()
 }
 
-func (t Simple3) Render() pulp.StaticDynamic {
+func (t Simple3) Render() pulp.HTML {
 
 	var arg0 interface{} = pulp.If{
 		Condition: t.Age > 15,

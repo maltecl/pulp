@@ -12,7 +12,7 @@ func _() pulp.HTML {
 
 	_ = t
 
-	return pulp.L{`
+	return pulp.L(`
 	<input type="text" value="{{t.Username}}" amigo-input="username">{{t.Username}}</input>
 	<p>{{t.Age}}</p>
 	<button amigo-click="inc"> increment </button>
@@ -30,5 +30,11 @@ func _() pulp.HTML {
 		<h4>name: {{t.Username}} </h4>
 	{{else}}
 		<p> {{t.Age}} </p>
-	{{end}}`}
+	{{end}}
+	
+	{{ for i, x := range []int{1,2,3} }}
+			<span> {{ i }} - {{ fmt.Sprint(i) }} </span>
+	{{ end }}
+	
+	`)
 }

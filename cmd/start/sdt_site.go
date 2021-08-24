@@ -57,7 +57,7 @@ func (t *TestSite) HandleEvent(event pulp.Event, socket pulp.Socket) {
 	socket.Changes(t).Do()
 }
 
-func (t TestSite) Render() pulp.StaticDynamic {
+func (t TestSite) Render() pulp.HTML {
 
 	cond0 := len(t.Username) > 5
 	arg0 := pulp.IfTemplate{

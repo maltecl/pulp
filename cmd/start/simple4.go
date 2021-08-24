@@ -41,9 +41,9 @@ func (t *Simple4) Mount(socket pulp.Socket) {
 			select {
 			case <-socket.Done():
 				return
-			// case <-twoSeconds.C:
-			// 	t.viewed++
-			// 	socket.Changes(t).Do()
+			case <-twoSeconds.C:
+				t.viewed++
+				socket.Changes(t).Do()
 			case <-threeSeconds.C:
 				t.posts = append(t.posts, post{fmt.Sprintf("title: %d", i), "some body"})
 				i++
@@ -72,7 +72,7 @@ func (t *Simple4) Mount(socket pulp.Socket) {
 
 func (t *Simple4) HandleEvent(event pulp.Event, socket pulp.Socket) {}
 
-func (t Simple4) Render() pulp.StaticDynamic {
+func (t Simple4) Render() pulp.HTML {
 
 	arg0 := pulp.For{
 		Statics:      []string{"<h3>", "</h3> <p>", "</p>"},
@@ -86,13 +86,43 @@ func (t Simple4) Render() pulp.StaticDynamic {
 
 	return pulp.NewStaticDynamic(
 		`ticks: <span> {} </span>
-		
+
 		posts:
 			{}
 		`,
 		t.viewed,
 		arg0,
 	)
+}
+
+// func (t Simple4) Render() pulp.HTML {
+// 	return func() pulp.StaticDynamic {
+// 		x1 := t.viewed
+// 		x2 := pulp.For{
+// 			Statics:      []string{"\n\t\t<span> ", " </span> <h3> ", " </h3> <p> ", " </p>\n\t"},
+// 			ManyDynamics: make([]pulp.Dynamics, 0),
+// 			DiffStrategy: pulp.Append,
+// 		}
+
+// 		for i, post := range t.posts {
+// 			x2.ManyDynamics = append(x2.ManyDynamics, pulp.Dynamics{i, post.title, post.body})
+// 		}
+// 		x3 := pulp.NewStaticDynamic("`\n\tticks: <span> {} </span>\n\n\tposts: \n\t", x1, x2)
+// 		return x3
+// 	}()
+// }
+
+func _() pulp.HTML {
+
+	return pulp.L(`
+		ticks: <span> {{t.viewed}} </span>
+
+		posts: 
+		{{ for i, post := range t.posts }}
+			<h3> {{post.title}} </h3> <p> {{post.body}} </p>
+		{{end}}
+
+	`)
 }
 
 func (Simple4) Name() string { return "Simple4" }
