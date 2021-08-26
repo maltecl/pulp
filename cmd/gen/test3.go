@@ -16,6 +16,13 @@ func (t *Simple3) Mount(socket pulp.Socket) {
 	t.Username = "Donald Duck"
 	t.Age = 14
 
+	// go func() {
+	// 	for range time.NewTicker(time.Second).C {
+	// 		t.Age++
+	// 		socket.Changes(t).Do()
+	// 	}
+	// }()
+
 	socket.Changes(t).Do()
 }
 

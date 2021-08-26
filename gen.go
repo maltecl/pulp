@@ -7,6 +7,39 @@ import (
 	"github.com/kr/pretty"
 )
 
+type Generator struct {
+	idCounter    int
+	sourceWriter strings.Builder
+}
+
+func (g *Generator) WriteNamed(source string) id {
+	ident := g.nextID()
+	g.sourceWriter.WriteString(string(ident) + " := " + source)
+	return ident
+}
+
+func (g *Generator) WriteNamedWithID(source func(id) string) id {
+	ident := g.nextID()
+	g.sourceWriter.WriteString(string(ident) + " := " + source(ident))
+	return ident
+}
+
+func (g Generator) Out() string {
+	return fmt.Sprintf(`func() pulp.StaticDynamic {
+	%s
+	return %s
+}()`, g.sourceWriter.String(), string(g.lastID()))
+}
+
+func (g *Generator) nextID() id {
+	g.idCounter++
+	return id("x" + fmt.Sprint(g.idCounter))
+}
+
+func (g *Generator) lastID() id {
+	return id("x" + fmt.Sprint(g.idCounter))
+}
+
 func (r staticDynamicExpr) Gen(g *Generator) id {
 	staticsString := strings.Join(r.static, "{}")
 
@@ -36,9 +69,9 @@ func (i *ifExpr) Gen(g *Generator) id {
 	`,
 			i.condStr,
 			pretty.Sprint(i.True.static),
-			sprintDynamic(i.True.dynamic),
+			sprintDynamic(i.True.dynamic, g),
 			pretty.Sprint(i.False.static),
-			sprintDynamic(i.False.dynamic),
+			sprintDynamic(i.False.dynamic, g),
 		),
 	)
 }
@@ -58,14 +91,32 @@ func (e forExpr) Gen(g *Generator) id {
 	for %s {
 		%s.ManyDynamics = append(%s.ManyDynamics, pulp.Dynamics%s)
 	}
-	`, pretty.Sprint(e.static), e.rangeStr, string(currentID), string(currentID), sprintDynamic(e.dynamic))
+	`, pretty.Sprint(e.static), e.rangeStr, string(currentID), string(currentID), sprintDynamic(e.dynamic, g))
 
 	})
 }
 
-func sprintDynamic(dynamics []expr) string {
-	ret := fmt.Sprint(dynamics)
-	ret = strings.ReplaceAll(ret, " ", ", ")
-	ret = ret[1 : len(ret)-1]
-	return "{" + ret + "}"
+func sprintDynamic(dynamics []expr, g *Generator) string {
+
+	ret := &strings.Builder{}
+
+	for _, e := range dynamics {
+		if ee, ok := e.(rawStringExpr); ok {
+			ret.WriteString(string(ee))
+		} else {
+			ret.WriteString(string(e.Gen(g)))
+		}
+		ret.WriteString(", ")
+	}
+
+	// ret := fmt.Sprint(dynamics)
+	// ret = strings.ReplaceAll(ret, " ", ", ")
+	// ret = ret[1 : len(ret)-1]
+
+	retStr := ret.String()
+
+	if len(dynamics) > 1 {
+		retStr = retStr[:len(retStr)-1]
+	}
+	return "{" + retStr + "}"
 }

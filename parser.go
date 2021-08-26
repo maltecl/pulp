@@ -22,39 +22,6 @@ func (p *parser) assertf(cond bool, format string, args ...interface{}) {
 	p.Error = fmt.Errorf(format, args...)
 }
 
-type Generator struct {
-	idCounter    int
-	sourceWriter strings.Builder
-}
-
-func (g *Generator) WriteNamed(source string) id {
-	ident := g.nextID()
-	g.sourceWriter.WriteString(string(ident) + " := " + source)
-	return ident
-}
-
-func (g *Generator) WriteNamedWithID(source func(id) string) id {
-	ident := g.nextID()
-	g.sourceWriter.WriteString(string(ident) + " := " + source(ident))
-	return ident
-}
-
-func (g Generator) Out() string {
-	return fmt.Sprintf(`func() pulp.StaticDynamic {
-	%s
-	return %s
-}()`, g.sourceWriter.String(), string(g.lastID()))
-}
-
-func (g *Generator) nextID() id {
-	g.idCounter++
-	return id("x" + fmt.Sprint(g.idCounter))
-}
-
-func (g *Generator) lastID() id {
-	return id("x" + fmt.Sprint(g.idCounter))
-}
-
 func NewParser(input string) *parser {
 	tokens := make(chan *token)
 

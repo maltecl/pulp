@@ -18,7 +18,7 @@ func _() pulp.HTML {
 	<button amigo-click="inc"> increment </button>
 	<button amigo-click="dec"> decrement </button>
 	
-	{{if t.Age > 10}}
+	{{if t.Age > 20}}
 		<h4>name: {{t.Username}} </h4>
 		
 		{{if t.Age > 10}}
