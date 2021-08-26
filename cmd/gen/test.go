@@ -20,20 +20,21 @@ func _() pulp.HTML {
 	
 	{{if t.Age > 10}}
 		<h4>name: {{t.Username}} </h4>
+		
+		{{if t.Age > 10}}
+			<h4>name: {{t.Username}} </h4>
+		{{else}}
+			<p> {{t.Age}} </p>
+		{{end}}
 	{{else}}
 		hello world
 	{{end}}
 
 
 
-	{{if t.Age > 10}}
-		<h4>name: {{t.Username}} </h4>
-	{{else}}
-		<p> {{t.Age}} </p>
-	{{end}}
 	
 	{{ for i, x := range []int{1,2,3} }}
-			<span> {{ i }} - {{ fmt.Sprint(i) }} </span>
+			<span> {{ i }} - {{ fmt.Sprint(x) }} </span>
 	{{ end }}
 	
 	`)

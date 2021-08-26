@@ -11,6 +11,15 @@ type parser struct {
 	done        <-chan struct{}
 	last        *token
 	lastTrimmed *token
+
+	Error error
+}
+
+func (p *parser) assertf(cond bool, format string, args ...interface{}) {
+	if p.Error != nil || cond {
+		return
+	}
+	p.Error = fmt.Errorf(format, args...)
 }
 
 type Generator struct {
@@ -71,16 +80,31 @@ func (p *parser) next() *token {
 	}
 }
 
-func (p *parser) Parse() *rootExpr {
-	sd := rootExpr{}
+func (p *parser) Parse() *staticDynamicExpr {
+	sd := staticDynamicExpr{}
 
 	go p.runLexer()
 
+	ret, _ := parseAllUntil(p, []string{})
+	sd.dynamic = ret.dynamic
+	sd.static = ret.static
+
+	return &sd
+}
+
+func parseAllUntil(p *parser, delimiters []string) (ret staticDynamicExpr, endedWith string) {
 	for {
 		next := p.next()
 
 		if next == nil {
 			break
+		}
+
+		for _, delimiter := range delimiters {
+			if p.lastTrimmed.value == delimiter {
+				endedWith = delimiter
+				return
+			}
 		}
 
 		if next.typ == tokGoSource {
@@ -91,16 +115,15 @@ func (p *parser) Parse() *rootExpr {
 				parser = parseRawString
 			}
 
-			sd.dynamic = append(sd.dynamic, parser(p))
+			ret.dynamic = append(ret.dynamic, parser(p))
 		} else if next.typ == tokOtherSource {
-
-			sd.static = append(sd.static, next.value)
+			ret.static = append(ret.static, p.last.value)
 		} else {
 			notreached()
 		}
 	}
 
-	return &sd
+	return
 }
 
 type id string
@@ -111,24 +134,24 @@ type expr interface {
 
 type parserFunc func(p *parser) expr
 
-var parserMap = map[string]parserFunc{
-	"for": parseFor,
-	"if":  parseIf,
+var parserMap map[string]parserFunc
+
+func init() {
+	parserMap = map[string]parserFunc{
+		"for": parseFor,
+		"if":  parseIf,
+	}
 }
 
 type rawStringExpr string
 
 func parseRawString(p *parser) expr {
-	return rawStringExpr(p.last.value)
-}
-
-type rootExpr struct {
-	static  []string
-	dynamic []expr
+	return rawStringExpr(p.lastTrimmed.value)
 }
 
 type staticDynamicExpr struct {
-	static, dynamic []string
+	static  []string
+	dynamic []expr
 }
 
 type ifExpr struct {
@@ -137,46 +160,25 @@ type ifExpr struct {
 	False   staticDynamicExpr
 }
 
+func assert(cond bool, msg string) {
+	if !cond {
+		panic(msg)
+	}
+}
+
 func parseIf(p *parser) expr {
 	ret := ifExpr{}
 	ret.condStr = p.last.value[len("if "):]
 
-	gotElseBranch := false
+	var endedWith string
+	ret.True, endedWith = parseAllUntil(p, []string{"else"})
 
-	for {
-		next := p.next()
-		if p.lastTrimmed.value == "else" {
-			gotElseBranch = true
-			break
-		}
-		if p.lastTrimmed.value == "end" {
-			break
-		}
-
-		if next.typ == tokGoSource {
-			ret.True.dynamic = append(ret.True.dynamic, next.value)
-		} else if next.typ == tokOtherSource {
-			ret.True.static = append(ret.True.static, next.value)
-		} else {
-			notreached()
-		}
-	}
+	gotElseBranch := endedWith == "else"
+	p.assertf(gotElseBranch, fmt.Sprintf("!gotElseBranch: %q", endedWith))
 
 	if gotElseBranch {
-		for {
-			next := p.next()
-			if strings.TrimSpace(next.value) == "end" {
-				break
-			}
-
-			if next.typ == tokGoSource {
-				ret.False.dynamic = append(ret.False.dynamic, next.value)
-			} else if next.typ == tokOtherSource {
-				ret.False.static = append(ret.False.static, next.value)
-			} else {
-				notreached()
-			}
-		}
+		ret.False, endedWith = parseAllUntil(p, []string{"end"})
+		p.assertf(endedWith == "end", fmt.Sprintf("expected \"end\", got: %q", endedWith))
 	}
 
 	return &ret
@@ -184,28 +186,17 @@ func parseIf(p *parser) expr {
 
 type forExpr struct {
 	rangeStr string
-	static   []string
-	dynamic  []string
+	staticDynamicExpr
 }
 
 func parseFor(p *parser) expr {
 	ret := forExpr{}
 	ret.rangeStr = p.last.value[len("for "):]
 
-	for {
-		next := p.next()
+	var endedWith string
+	ret.staticDynamicExpr, endedWith = parseAllUntil(p, []string{"end"})
 
-		if p.lastTrimmed.value == "end" {
-			break
-		}
+	p.assertf(endedWith == "end", fmt.Sprintf(`expected "end", got: `, endedWith))
 
-		if next.typ == tokGoSource {
-			ret.dynamic = append(ret.dynamic, p.lastTrimmed.value)
-		} else if next.typ == tokOtherSource {
-			ret.static = append(ret.static, next.value)
-		} else {
-			notreached()
-		}
-	}
 	return ret
 }

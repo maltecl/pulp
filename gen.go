@@ -7,7 +7,7 @@ import (
 	"github.com/kr/pretty"
 )
 
-func (r rootExpr) Gen(g *Generator) id {
+func (r staticDynamicExpr) Gen(g *Generator) id {
 	staticsString := strings.Join(r.static, "{}")
 
 	dynamicString := &strings.Builder{}
@@ -17,10 +17,6 @@ func (r rootExpr) Gen(g *Generator) id {
 	}
 
 	return g.WriteNamed(fmt.Sprintf("pulp.NewStaticDynamic(%q %s)", staticsString, dynamicString.String()))
-}
-
-func (staticDynamicExpr) Gen(g *Generator) id {
-	return id("")
 }
 
 func (i *ifExpr) Gen(g *Generator) id {
@@ -67,7 +63,7 @@ func (e forExpr) Gen(g *Generator) id {
 	})
 }
 
-func sprintDynamic(dynamics []string) string {
+func sprintDynamic(dynamics []expr) string {
 	ret := fmt.Sprint(dynamics)
 	ret = strings.ReplaceAll(ret, " ", ", ")
 	ret = ret[1 : len(ret)-1]

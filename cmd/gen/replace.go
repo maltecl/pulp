@@ -6,6 +6,7 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
+	"log"
 	"pulp"
 
 	"github.com/kr/pretty"
@@ -19,12 +20,18 @@ func replace(sourceName, source string) ([]byte, error) {
 		return nil, err
 	}
 
-	pretty.Print(expr)
+	// pretty.Print(expr)
 
 	result := astutil.Apply(expr, func(cr *astutil.Cursor) bool {
 		if source := detect(cr.Node()); source != nil {
 			g := &pulp.Generator{}
-			pulp.NewParser(*source).Parse().Gen(g)
+			parser := pulp.NewParser(*source)
+			tree := parser.Parse()
+			if parser.Error != nil {
+				log.Fatal(parser.Error)
+			}
+			tree.Gen(g)
+			pretty.Print(tree)
 			cr.Replace(&ast.BasicLit{Value: g.Out()})
 			return false
 		}
