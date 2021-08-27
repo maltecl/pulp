@@ -163,7 +163,7 @@ func parseFor(p *parser) expr {
 	var endedWith string
 	ret.staticDynamicExpr, endedWith = parseAllUntil(p, []string{"end"})
 
-	p.assertf(endedWith == "end", fmt.Sprintf(`expected "end", got: `, endedWith))
+	p.assertf(endedWith == "end", fmt.Sprintf(`expected "end", got: %q`, endedWith))
 
 	return ret
 }

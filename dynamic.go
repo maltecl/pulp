@@ -73,10 +73,15 @@ type RenderDiff interface {
 	Renderable
 }
 
+// TODO: not quite working yet
+func (sd StaticDynamic) Diff(new interface{}) *Patches {
+	new_ := new.(StaticDynamic)
+
+	return &Patches{"d": sd.Dynamic.Diff(new_.Dynamic)}
+}
+
 // Dynamics can be filled by actual values or itself by other Diffables
 type Dynamics []interface{}
-
-var _ = Dynamics{0, 1}
 
 func (d Dynamics) Diff(new interface{}) *Patches {
 	new_ := new.(Dynamics)

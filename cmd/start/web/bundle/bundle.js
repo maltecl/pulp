@@ -928,7 +928,9 @@ class Pulp {
                 }
 
                 if (i < d.length) {
-                    if (Pulp.For.detect(d[i])) {
+                    if (Pulp.StaticDynamic.detect(d[i])) {
+                        out += Pulp.StaticDynamic.render(d[i])
+                    } else if (Pulp.For.detect(d[i])) {
                         out += Pulp.For.render(d[i])
                     } else if (Pulp.If.detect(d[i])) { // ifTemplate
                         out += Pulp.If.render(d[i])
@@ -944,8 +946,8 @@ class Pulp {
         patch({ s, d }, patches) {
             return { s, d: Pulp.Dynamics.patch(d, patches) }
         },
-        detect() {
-
+        detect(it) {
+            return set(it.s) && set(it.d)
         },
     }
 
