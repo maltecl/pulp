@@ -172,7 +172,7 @@ func (old For) Diff(new interface{}) *Patches {
 
 	for i, dynamics := range old.ManyDynamics {
 		if diff := dynamics.Diff(new_.ManyDynamics[i]); diff != nil {
-			patches[fmt.Sprint(i)] = diff
+			patches[fmt.Sprint(i)] = diff // TODO: check here, if the dynamic value has a key and use that instead. default to the slower index approach seen here
 		}
 	}
 

@@ -34,26 +34,34 @@ func (t *Simple3) HandleEvent(event pulp.Event, socket pulp.Socket) {
 }
 
 func (t Simple3) Render() pulp.HTML {
-	return pulp.L(`
-	<input type="text" value="{{ t.Username }}" amigo-input="username">{}</input>
-	<p>{{ t.Username }}</p>
-	<button amigo-click="inc"> increment </button>
-	<button amigo-click="dec"> decrement </button>
-	
-
-	{{ if t.Age > 10 }} 
-		age > 10, wait for it.. 
-
-		{{ if t.Age > 15 }}
-			<h4>name: {{ t.Username }} </h4>
-		{{ else }}
-			hello world
-		{{ end }}
-
-	{{ else }}
-		<p> {{ t.Age }} </p>
-	{{ end }}
-	`)
+	return func() pulp.StaticDynamic {
+		x1 := t.Username
+		x2 := t.Username
+		x3 := pulp.If{
+			Condition: t.Age > 15,
+			True: pulp.StaticDynamic{
+				Static:  []string{"\n\t\t\t<h4>name: ", " </h4>\n\t\t"},
+				Dynamic: pulp.Dynamics{t.Username},
+			},
+			False: pulp.StaticDynamic{
+				Static:  []string{"\n\t\t\thello world\n\t\t"},
+				Dynamic: pulp.Dynamics{},
+			},
+		}
+		x4 := pulp.If{
+			Condition: t.Age > 10,
+			True: pulp.StaticDynamic{
+				Static:  []string{" \n\t\tage > 10, wait for it.. \n\n\t\t", "\n\n\t"},
+				Dynamic: pulp.Dynamics{x3},
+			},
+			False: pulp.StaticDynamic{
+				Static:  []string{"\n\t\t<p> ", " </p>\n\t"},
+				Dynamic: pulp.Dynamics{t.Age},
+			},
+		}
+		x5 := pulp.NewStaticDynamic("`\n\t<input type=\"text\" value=\"{}\" pulp-input=\"username\">{}</input>\n\t<p>{}</p>\n\t<button pulp-click=\"inc\"> increment </button>\n\t<button pulp-click=\"dec\"> decrement </button>\n\t\n\n\t", x1, x2, x4)
+		return x5
+	}()
 }
 
 func (Simple3) Name() string { return "Simple3" }

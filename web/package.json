@@ -1,5 +1,5 @@
 {
-    "name": "amgio_web",
+    "name": "pulp_web",
     "version": "1.0.0",
     "description": "",
     "main": "pulp.js",
