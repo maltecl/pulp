@@ -237,7 +237,7 @@ class PulpSocket {
 
     constructor(mountID) {
 
-        let cachedSD = {};
+        let cachedSD = {}; // TODO: make this better somehow. it works for now 
         let ws = null;
         let hasMounted = false
 
