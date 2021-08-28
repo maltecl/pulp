@@ -49,8 +49,8 @@ class Pulp {
     })
 
     static removeHandlersForElementNames = socket => ({
-        "HTMLButtonElement": (node) => Pulp.addHandler(socket, node, Pulp.CLICK, "click"), // TODO: this should be removeHandler
-        "HTMLInputElement": (node) => Pulp.addHandler(socket, node, Pulp.INPUT, "input"),
+        "HTMLButtonElement": (node) => Pulp.removeHandler(socket, node, Pulp.CLICK, "click"),
+        "HTMLInputElement": (node) => Pulp.removeHandler(socket, node, Pulp.INPUT, "input"),
     })
 
     static handlerForNode(socket, node, pulpAttr, includeValues) {
@@ -95,6 +95,19 @@ class Pulp {
     }
 
 
+
+
+    static detectStruct(it) {
+        if (Pulp.StaticDynamic.detect(d[i])) {
+            return Pulp.StaticDynamic
+        } else if (Pulp.For.detect(d[i])) {
+            return Pulp.For
+        } else if (Pulp.If.detect(d[i])) { // ifTemplate
+            return Pulp.If
+        }
+
+        return null
+    }
 
 
     static If = {

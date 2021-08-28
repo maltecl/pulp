@@ -90,6 +90,11 @@ func (l *lexer) backup() {
 
 func (l *lexer) emit(t tokenTyp) {
 	val := l.input[l.start:l.pos]
+
+	if val[0] == '`' { // TODO: find the root cause of this
+		val = val[1:]
+	}
+
 	tok := &token{t, val}
 	l.tokens <- tok
 	l.last = tok
