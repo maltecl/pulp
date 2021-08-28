@@ -20,12 +20,12 @@ type LiveComponent interface {
 
 type Event struct {
 	Name string
-	Data map[string]string
+	Data map[string]interface{}
 }
 
 func New(ctx context.Context, component LiveComponent, events chan Event, errors chan<- error, onMount chan<- StaticDynamic) <-chan Patches {
 
-	socket := Socket{Context: ctx, updates: make(chan Socket)}
+	socket := Socket{Context: ctx, updates: make(chan Socket), events: events}
 	patchesStream := make(chan Patches)
 
 	component.Mount(socket)
@@ -179,7 +179,7 @@ func handler(component LiveComponent) http.HandlerFunc {
 
 		go func() {
 			for {
-				var msg = map[string]string{}
+				var msg = map[string]interface{}{}
 
 				err := conn.ReadJSON(&msg)
 				if err != nil {
@@ -192,7 +192,7 @@ func handler(component LiveComponent) http.HandlerFunc {
 
 				fmt.Println(msg)
 
-				t := msg["type"]
+				t := msg["type"].(string)
 				delete(msg, "type")
 
 				select {
