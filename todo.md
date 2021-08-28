@@ -8,13 +8,20 @@
 
 
 
-## Json Path
+### Json Path
   - use json path for slimmer patches
 
 
-## run go import on the output file
+### run go import on the output file
 
-
+### last token after goSource seems to be missing 
+```handlebars
+	<ul>
+    {{ for _, line := range outLines}}
+      <li> {{ line }} </li>
+    {{ end }}
+  </ul>
+```
 ## If
   - make it so that when the condition is `True` the dynamic values for the `False` `StaticDynamic` are not sent. 
   - When the condition later flips, those dynamic values are sent 

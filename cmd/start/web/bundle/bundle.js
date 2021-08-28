@@ -864,27 +864,27 @@ class Pulp {
 
 
     static detectStruct(it) {
-        if (Pulp.StaticDynamic.detect(d[i])) {
-            return Pulp.StaticDynamic
-        } else if (Pulp.For.detect(d[i])) {
-            return Pulp.For
-        } else if (Pulp.If.detect(d[i])) { // ifTemplate
-            return Pulp.If
+        if (Pulp.StaticDynamicOld.detect(d[i])) {
+            return Pulp.StaticDynamicOld
+        } else if (Pulp.ForOld.detect(d[i])) {
+            return Pulp.ForOld
+        } else if (Pulp.IfOld.detect(d[i])) { // ifTemplate
+            return Pulp.IfOld
         }
 
         return null
     }
 
 
-    static If = {
+    static IfOld = {
         render({ c, t, f }) {
-            return Pulp.StaticDynamic.render(c ? t : f)
+            return Pulp.StaticDynamicOld.render(c ? t : f)
         },
         patch(old, patches) {
             const ret = {
                 c: set(patches.c) ? patches.c : old.c,
-                t: set(patches.t) ? Pulp.StaticDynamic.patch(old.t, patches.t) : old.t,
-                f: set(patches.f) ? Pulp.StaticDynamic.patch(old.f, patches.f) : old.f,
+                t: set(patches.t) ? Pulp.StaticDynamicOld.patch(old.t, patches.t) : old.t,
+                f: set(patches.f) ? Pulp.StaticDynamicOld.patch(old.f, patches.f) : old.f,
             }
 
             return ret
@@ -894,7 +894,7 @@ class Pulp {
         }
     }
 
-    static Dynamics = {
+    static DynamicsOld = {
         render(list) {
 
         },
@@ -903,16 +903,16 @@ class Pulp {
 
             Object.keys(patches).forEach(key => {
                 if (copy[key] !== null && copy[key] !== undefined) {
-                    if (Pulp.Dynamics.detect(copy[key])) {
-                        copy[key] = Pulp.Dynamics.patch(copy[key], patches[key])
+                    if (Pulp.DynamicsOld.detect(copy[key])) {
+                        copy[key] = Pulp.DynamicsOld.patch(copy[key], patches[key])
                         return
                     }
-                    if (Pulp.For.detect(copy[key])) {
-                        copy[key] = Pulp.For.patch(copy[key], patches[key])
+                    if (Pulp.ForOld.detect(copy[key])) {
+                        copy[key] = Pulp.ForOld.patch(copy[key], patches[key])
                         return
                     }
-                    if (Pulp.If.detect(copy[key])) {
-                        copy[key] = Pulp.If.patch(copy[key], patches[key])
+                    if (Pulp.IfOld.detect(copy[key])) {
+                        copy[key] = Pulp.IfOld.patch(copy[key], patches[key])
                         return
                     }
                 }
@@ -929,7 +929,7 @@ class Pulp {
     }
 
 
-    static StaticDynamic = {
+    static StaticDynamicOld = {
         render({ s, d }) {
             let out = ""
 
@@ -941,12 +941,12 @@ class Pulp {
                 }
 
                 if (i < d.length) {
-                    if (Pulp.StaticDynamic.detect(d[i])) {
-                        out += Pulp.StaticDynamic.render(d[i])
-                    } else if (Pulp.For.detect(d[i])) {
-                        out += Pulp.For.render(d[i])
-                    } else if (Pulp.If.detect(d[i])) { // ifTemplate
-                        out += Pulp.If.render(d[i])
+                    if (Pulp.StaticDynamicOld.detect(d[i])) {
+                        out += Pulp.StaticDynamicOld.render(d[i])
+                    } else if (Pulp.ForOld.detect(d[i])) {
+                        out += Pulp.ForOld.render(d[i])
+                    } else if (Pulp.IfOld.detect(d[i])) { // ifTemplate
+                        out += Pulp.IfOld.render(d[i])
                     } else {
                         out += d[i]
                     }
@@ -957,7 +957,7 @@ class Pulp {
             return out
         },
         patch({ s, d }, patches) {
-            return { s, d: Pulp.Dynamics.patch(d, patches) }
+            return { s, d: Pulp.DynamicsOld.patch(d, patches) }
         },
         detect(it) {
             return set(it.s) && set(it.d)
@@ -965,7 +965,7 @@ class Pulp {
     }
 
 
-    static For = {
+    static ForOld = {
         strategy: {
             append: 0,
         },
@@ -974,7 +974,7 @@ class Pulp {
             let forStr = ""
 
             ds.forEach(dynamic => {
-                forStr += Pulp.StaticDynamic.render({ s, d: dynamic })
+                forStr += Pulp.StaticDynamicOld.render({ s, d: dynamic })
             })
 
             return forStr
@@ -991,8 +991,8 @@ class Pulp {
 
             if (shouldResize) {
                 switch (old.strategy) {
-                    case Pulp.For.strategy.append:
-                        return {...old, ds: Pulp.Dynamics.patch([...old.ds, null], patches.ds) }
+                    case Pulp.ForOld.strategy.append:
+                        return {...old, ds: Pulp.DynamicsOld.patch([...old.ds, null], patches.ds) }
                     default:
                         console.error("should not be reached in switch")
                 }
@@ -1000,7 +1000,7 @@ class Pulp {
 
 
 
-            return {...old, ds: Pulp.Dynamics.patch(old.ds, patches.ds) }
+            return {...old, ds: Pulp.DynamicsOld.patch(old.ds, patches.ds) }
 
         },
         detect(it) {
@@ -1043,12 +1043,12 @@ class PulpSocket {
 
                         cachedSD = JSON.parse(message)
                         console.log(cachedSD)
-                        console.log("Pulp.StaticDynamic.render: " + Pulp.StaticDynamic.render(cachedSD))
+                        console.log("Pulp.StaticDynamic.render: " + Pulp.StaticDynamicOld.render(cachedSD))
 
 
                         const temp = document.createElement("div")
                         temp.id = "mount"
-                        temp.innerHTML = Pulp.StaticDynamic.render(cachedSD)
+                        temp.innerHTML = Pulp.StaticDynamicOld.render(cachedSD)
                         morphdom(mount, temp, morphdomHooks({ ws }))
 
                         hasMounted = true
@@ -1059,14 +1059,14 @@ class PulpSocket {
 
                     const patches = JSON.parse(message)
 
-                    cachedSD = Pulp.StaticDynamic.patch(cachedSD, patches)
+                    cachedSD = Pulp.StaticDynamicOld.patch(cachedSD, patches)
 
 
                     Object.assign(globalThis, { cachedSD })
 
                     const temp = document.createElement("div")
                     temp.id = "mount"
-                    const lastRender = Pulp.StaticDynamic.render(cachedSD)
+                    const lastRender = Pulp.StaticDynamicOld.render(cachedSD)
                     Object.assign(globalThis, { lastRender })
                     temp.innerHTML = lastRender
                     morphdom(mount, temp, morphdomHooks({ ws }))
@@ -1074,6 +1074,34 @@ class PulpSocket {
                 }).catch(console.error)
         }
 
+    }
+}
+
+
+
+
+function classify(it) {
+
+    if (Pulp.IfOld.detect(it)) {
+        return
+    }
+
+}
+
+
+class SD {
+    constructor({ s, d }) {
+        this.s = s
+        this.d = d.map(classify)
+    }
+}
+
+
+class IF {
+    constructor({ c, t, f }) {
+        this.c = c
+        this.t = new SD(t)
+        this.f = new SD(f)
     }
 }
 

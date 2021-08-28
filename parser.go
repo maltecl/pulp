@@ -127,12 +127,6 @@ type ifExpr struct {
 	False   staticDynamicExpr
 }
 
-func assert(cond bool, msg string) {
-	if !cond {
-		panic(msg)
-	}
-}
-
 func parseIf(p *parser) expr {
 	ret := ifExpr{}
 	ret.condStr = p.last.value[len("if "):]

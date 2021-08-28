@@ -1,6 +1,7 @@
 package pulp
 
 import (
+	"strings"
 	"unicode/utf8"
 )
 
@@ -95,7 +96,7 @@ func (l *lexer) emit(t tokenTyp) {
 		val = val[1:]
 	}
 
-	tok := &token{t, val}
+	tok := &token{t, strings.ReplaceAll(strings.ReplaceAll(val, "\n", ""), "\t", "")}
 	l.tokens <- tok
 	l.last = tok
 	l.start = l.pos

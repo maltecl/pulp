@@ -1,5 +1,5 @@
 const morphdom = require("morphdom")
-
+const { FOR, IF, SD } = require("./types")
 
 
 
@@ -93,155 +93,9 @@ class Pulp {
             node.removeEventListener(eventType, Pulp.handlerForNode(socket, node, pulpAttr))
         }
     }
-
-
-
-
-    static detectStruct(it) {
-        if (Pulp.StaticDynamic.detect(d[i])) {
-            return Pulp.StaticDynamic
-        } else if (Pulp.For.detect(d[i])) {
-            return Pulp.For
-        } else if (Pulp.If.detect(d[i])) { // ifTemplate
-            return Pulp.If
-        }
-
-        return null
-    }
-
-
-    static If = {
-        render({ c, t, f }) {
-            return Pulp.StaticDynamic.render(c ? t : f)
-        },
-        patch(old, patches) {
-            const ret = {
-                c: set(patches.c) ? patches.c : old.c,
-                t: set(patches.t) ? Pulp.StaticDynamic.patch(old.t, patches.t) : old.t,
-                f: set(patches.f) ? Pulp.StaticDynamic.patch(old.f, patches.f) : old.f,
-            }
-
-            return ret
-        },
-        detect(it) {
-            return set(it.c) || set(it.f) || set(it.t)
-        }
-    }
-
-    static Dynamics = {
-        render(list) {
-
-        },
-        patch(old, patches) {
-            let copy = [...old]
-
-            Object.keys(patches).forEach(key => {
-                if (copy[key] !== null && copy[key] !== undefined) {
-                    if (Pulp.Dynamics.detect(copy[key])) {
-                        copy[key] = Pulp.Dynamics.patch(copy[key], patches[key])
-                        return
-                    }
-                    if (Pulp.For.detect(copy[key])) {
-                        copy[key] = Pulp.For.patch(copy[key], patches[key])
-                        return
-                    }
-                    if (Pulp.If.detect(copy[key])) {
-                        copy[key] = Pulp.If.patch(copy[key], patches[key])
-                        return
-                    }
-                }
-
-
-                copy[key] = patches[key]
-            })
-
-            return copy
-        },
-        detect(it) {
-            return Array.isArray(it)
-        }
-    }
-
-
-    static StaticDynamic = {
-        render({ s, d }) {
-            let out = ""
-
-            for (let i = 0; i < s.length; i++) {
-                out += s[i]
-
-                if (!d) {
-                    continue
-                }
-
-                if (i < d.length) {
-                    if (Pulp.StaticDynamic.detect(d[i])) {
-                        out += Pulp.StaticDynamic.render(d[i])
-                    } else if (Pulp.For.detect(d[i])) {
-                        out += Pulp.For.render(d[i])
-                    } else if (Pulp.If.detect(d[i])) { // ifTemplate
-                        out += Pulp.If.render(d[i])
-                    } else {
-                        out += d[i]
-                    }
-
-                }
-            }
-
-            return out
-        },
-        patch({ s, d }, patches) {
-            return { s, d: Pulp.Dynamics.patch(d, patches) }
-        },
-        detect(it) {
-            return set(it.s) && set(it.d)
-        },
-    }
-
-
-    static For = {
-        strategy: {
-            append: 0,
-        },
-
-        render({ s, ds }) {
-            let forStr = ""
-
-            ds.forEach(dynamic => {
-                forStr += Pulp.StaticDynamic.render({ s, d: dynamic })
-            })
-
-            return forStr
-        },
-        patch(old, patches) {
-            console.log("OLD ", old, " PATCHES ", patches)
-
-
-
-            const maxKey = Object.keys(patches.ds).map(k => parseInt(k)).reduce(Math.max, -1)
-            const shouldResize = maxKey >= old.ds.length
-            console.log(maxKey, shouldResize)
-
-
-            if (shouldResize) {
-                switch (old.strategy) {
-                    case Pulp.For.strategy.append:
-                        return {...old, ds: Pulp.Dynamics.patch([...old.ds, null], patches.ds) }
-                    default:
-                        console.error("should not be reached in switch")
-                }
-            }
-
-
-
-            return {...old, ds: Pulp.Dynamics.patch(old.ds, patches.ds) }
-
-        },
-        detect(it) {
-            return set(it.ds) // holds true for both the initial server push and the patches
-        },
-    }
 }
+
+
 
 
 
@@ -270,19 +124,18 @@ class PulpSocket {
             data.text()
                 .then(message => {
 
-                    Object.assign(globalThis, { lastMessage: JSON.parse(message) })
+                    Object.assign(globalThis, { lastMessage: message })
 
 
                     if (!hasMounted) {
 
-                        cachedSD = JSON.parse(message)
+                        cachedSD = new SD(JSON.parse(message))
                         console.log(cachedSD)
-                        console.log("Pulp.StaticDynamic.render: " + Pulp.StaticDynamic.render(cachedSD))
 
 
                         const temp = document.createElement("div")
                         temp.id = "mount"
-                        temp.innerHTML = Pulp.StaticDynamic.render(cachedSD)
+                        temp.innerHTML = cachedSD.render()
                         morphdom(mount, temp, morphdomHooks({ ws }))
 
                         hasMounted = true
@@ -293,14 +146,14 @@ class PulpSocket {
 
                     const patches = JSON.parse(message)
 
-                    cachedSD = Pulp.StaticDynamic.patch(cachedSD, patches)
+                    cachedSD = cachedSD.patch(patches)
 
 
                     Object.assign(globalThis, { cachedSD })
 
                     const temp = document.createElement("div")
                     temp.id = "mount"
-                    const lastRender = Pulp.StaticDynamic.render(cachedSD)
+                    const lastRender = cachedSD.render()
                     Object.assign(globalThis, { lastRender })
                     temp.innerHTML = lastRender
                     morphdom(mount, temp, morphdomHooks({ ws }))
@@ -310,6 +163,9 @@ class PulpSocket {
 
     }
 }
+
+
+
 
 
 module.exports = { PulpSocket, Pulp }
