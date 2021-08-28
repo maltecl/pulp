@@ -2,6 +2,11 @@ const set = x => x !== undefined
 
 
 function classify(it) {
+
+    if (SD.detect(it)) {
+        return new SD(it)
+    }
+
     if (IF.detect(it)) {
         return new IF(it)
     }
