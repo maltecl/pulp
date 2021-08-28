@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 )
 
 var (
@@ -32,7 +33,17 @@ func logic() error {
 		return err
 	}
 
-	return ioutil.WriteFile(*outFilename, newFileContent, 0700)
+	err = ioutil.WriteFile(*outFilename, newFileContent, 0700)
+	if err != nil {
+		return err
+	}
+
+	newFileContent, err = exec.Command("goimports", *outFilename).Output()
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(*outFilename, newFileContent, 0700) // TODO: should not need to write the file two times
 }
 
 func main() {
