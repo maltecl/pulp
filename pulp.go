@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/kr/pretty"
@@ -17,6 +18,10 @@ type LiveComponent interface {
 	Render() HTML // guranteed to be StaticDynamic after code generation
 	HandleEvent(Event, Socket)
 	Name() string
+}
+
+type UnMountable interface {
+	UnMount()
 }
 
 type Event struct {
@@ -130,7 +135,8 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 
 		ctx, canc := context.WithCancel(context.Background())
 
-		patchesStream := New(ctx, newComponent(), events, errors, onMount)
+		component := newComponent()
+		patchesStream := New(ctx, component, events, errors, onMount)
 
 		// send mount message
 
@@ -147,25 +153,43 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 			close(onMount)
 		}
 
+		wg := &sync.WaitGroup{}
+
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			for patches := range patchesStream {
 				pretty.Println(patches)
 
 				payload, err := json.Marshal(patches)
 				if err != nil {
-					errors <- err
+					select {
+					case errors <- err:
+					case <-ctx.Done():
+						return
+					}
 				}
 
 				err = conn.WriteMessage(websocket.BinaryMessage, payload)
 				if err != nil {
-					errors <- err
+					select {
+					case errors <- err:
+					case <-ctx.Done():
+						return
+					}
 				}
 
 			}
-			errors <- nil
+			select {
+			case errors <- nil:
+			case <-ctx.Done():
+				return
+			}
 		}()
 
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			for {
 				var msg = map[string]interface{}{}
 
@@ -173,6 +197,7 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 				if err != nil {
 					select {
 					case errors <- err:
+						return
 					case <-ctx.Done():
 						return
 					}
@@ -193,10 +218,14 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 		}()
 
 		fmt.Printf("connection error: %v", <-errors)
+		if unmountable, ok := component.(UnMountable); ok {
+			unmountable.UnMount()
+		}
 		canc()
 		conn.Close()
-		close(events)
 
+		wg.Wait()
+		close(events)
 		close(errors)
 	}
 }
