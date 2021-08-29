@@ -38,9 +38,9 @@ func logic() error {
 		return err
 	}
 
-	newFileContent, err = exec.Command("goimports", *outFilename).Output()
-	if err != nil {
-		return err
+	withImports, err := exec.Command("goimports2", *outFilename).Output() // ignore the error, so that when goimports is not installed it's okay
+	if err == nil {
+		newFileContent = withImports
 	}
 
 	return ioutil.WriteFile(*outFilename, newFileContent, 0700) // TODO: should not need to write the file two times
