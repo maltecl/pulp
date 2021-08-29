@@ -82,11 +82,9 @@ func New(ctx context.Context, component LiveComponent, events chan Event, errors
 
 type HTML interface{ HTML() }
 
-func L(source string) LL { return LL{source} }
+type L string
 
-type LL struct{ Out string }
-
-func (LL) HTML() {}
+func (L) HTML() {}
 
 func (StaticDynamic) HTML() {}
 
