@@ -9,26 +9,26 @@ import (
 )
 
 var (
-	filename    *string = flag.String("in", "", "name of the file you want to run the ast-replacer on")
+	inFilename  *string = flag.String("in", "", "name of the file you want to run the ast-replacer on")
 	outFilename *string = flag.String("out", "", "name of the file you want the result to be written to")
 )
 
 func init() {
 	flag.Parse()
 
-	if *filename == "" || *outFilename == "" {
+	if *inFilename == "" || *outFilename == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
 }
 
 func logic() error {
-	fileContent, err := ioutil.ReadFile(*filename)
+	fileContent, err := ioutil.ReadFile(*inFilename)
 	if err != nil {
 		return err
 	}
 
-	newFileContent, err := replace(*filename, string(fileContent))
+	newFileContent, err := replace(*inFilename, string(fileContent))
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func logic() error {
 		return err
 	}
 
-	withImports, err := exec.Command("goimports2", *outFilename).Output() // ignore the error, so that when goimports is not installed it's okay
+	withImports, err := exec.Command("goimports", *outFilename).Output() // ignore the error, so that when goimports is not installed it's okay
 	if err == nil {
 		newFileContent = withImports
 	}

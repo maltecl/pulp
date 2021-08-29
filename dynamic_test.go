@@ -121,7 +121,7 @@ func TestNewStaticDynamic(t *testing.T) {
 	for i, tc := range cases {
 		got := NewStaticDynamic(tc.static, tc.dynamic...)
 		eq := Comparable(got, tc.expectedSD) && cmp.Equal(got, tc.expectedSD)
-		eqString := cmp.Equal(tc.expectedString, got.String())
+		eqString := cmp.Equal(tc.expectedString, got.Render())
 
 		if eq && eqString {
 			continue
@@ -139,8 +139,8 @@ func TestNewStaticDynamic(t *testing.T) {
 
 		if !eqString {
 			fmt.Fprintf(errStr, "!eqString: ")
-			fmt.Fprintf(errStr, "%q (expected) != %q", tc.expectedString, got.String())
-			fmt.Fprintf(errStr, "\ndiff:%v", cmp.Diff(tc.expectedString, got.String()))
+			fmt.Fprintf(errStr, "%q (expected) != %q", tc.expectedString, got.Render())
+			fmt.Fprintf(errStr, "\ndiff:%v", cmp.Diff(tc.expectedString, got.Render()))
 		}
 
 		t.Error(errStr.String())

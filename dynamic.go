@@ -7,6 +7,26 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+type StaticDynamic struct {
+	Static  []string `json:"s"`
+	Dynamic Dynamics `json:"d"`
+}
+
+func NewStaticDynamic(format string, dynamics ...interface{}) StaticDynamic {
+	static := strings.Split(format, "{}")
+
+	if dynamics == nil {
+		dynamics = []interface{}{}
+	}
+
+	return StaticDynamic{static, dynamics}
+}
+
+func Comparable(sd1, sd2 StaticDynamic) bool {
+	return len(sd1.Dynamic) == len(sd2.Dynamic) && len(sd1.Static) == len(sd2.Static)
+}
+
+// TODO: use this for the initial render over HTTP
 func (s StaticDynamic) Render() string {
 	res := strings.Builder{}
 
@@ -20,26 +40,26 @@ func (s StaticDynamic) Render() string {
 			case For:
 				res.WriteString(r.Render())
 
-			case IfTemplate:
-				ifStr := ""
+			// case IfTemplate:
+			// 	ifStr := ""
 
-				if *r.Condition {
-					ifStr = r.True.String()
-				} else {
-					ifStr = r.False.String()
-				}
-				res.WriteString(ifStr)
+			// 	if *r.Condition {
+			// 		ifStr = r.True.Render()
+			// 	} else {
+			// 		ifStr = r.False.Render()
+			// 	}
+			// 	res.WriteString(ifStr)
 
-			case ForTemplate:
-				notreached()
+			// case ForTemplate:
+			// 	notreached()
 
-				forStr := strings.Builder{}
+			// 	forStr := strings.Builder{}
 
-				for _, dynamic := range r.Dynamics {
-					fmt.Fprint(&forStr, StaticDynamic{Static: r.Static, Dynamic: dynamic}.String())
-				}
+			// 	for _, dynamic := range r.Dynamics {
+			// 		fmt.Fprint(&forStr, StaticDynamic{Static: r.Static, Dynamic: dynamic}.Render())
+			// 	}
 
-				res.WriteString(forStr.String())
+			// 	res.WriteString(forStr.String())
 			default:
 				res.WriteString(fmt.Sprint(s.Dynamic[i]))
 			}

@@ -19,13 +19,11 @@ type token struct {
 }
 
 type lexer struct {
-	input                 string
-	pos, start, posInLine int
-	width                 int
-	tokens                chan *token
-	last                  *token
-
-	state lexerFunc
+	input      string
+	pos, start int
+	width      int
+	tokens     chan *token
+	state      lexerFunc
 }
 
 const (
@@ -36,14 +34,13 @@ type lexerFunc func(*lexer) lexerFunc
 
 func (l *lexer) next() (r rune) {
 	if l.pos >= len(l.input) {
-		l.width = 0
+		// l.width = 0
 		l.emit(tokEof)
 		return eof
 	}
 
 	r, l.width = utf8.DecodeRuneInString(l.input[l.pos:])
 	l.pos += l.width
-	l.posInLine += l.width
 	return r
 }
 
@@ -91,14 +88,8 @@ func (l *lexer) backup() {
 
 func (l *lexer) emit(t tokenTyp) {
 	val := l.input[l.start:l.pos]
-
-	if val[0] == '`' { // TODO: find the root cause of this
-		val = val[1:]
-	}
-
 	tok := &token{t, strings.ReplaceAll(strings.ReplaceAll(val, "\n", ""), "\t", "")}
 	l.tokens <- tok
-	l.last = tok
 	l.start = l.pos
 }
 

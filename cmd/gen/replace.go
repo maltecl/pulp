@@ -2,11 +2,12 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"go/ast"
 	"go/format"
 	"go/parser"
 	"go/token"
-	"log"
+	"os"
 	"pulp"
 
 	"github.com/kr/pretty"
@@ -24,11 +25,14 @@ func replace(sourceName, source string) ([]byte, error) {
 
 	result := astutil.Apply(expr, func(cr *astutil.Cursor) bool {
 		if source := detect(cr.Node()); source != nil {
+			*source = (*source)[1 : len(*source)-1] // removes the backticks or the " from the string literal
+
 			g := &pulp.Generator{}
 			parser := pulp.NewParser(*source)
 			tree := parser.Parse()
 			if parser.Error != nil {
-				log.Fatal(parser.Error)
+				fmt.Print(parser.Error)
+				os.Exit(-1)
 			}
 			tree.Gen(g)
 			pretty.Print(tree)

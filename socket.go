@@ -13,7 +13,9 @@ type Socket struct {
 	events chan<- Event
 }
 
-func (s *Socket) Dispatch(event string, data map[string]interface{}) {
+type M map[string]interface{}
+
+func (s *Socket) Dispatch(event string, data M) {
 	select {
 	case <-s.Done():
 	case s.events <- Event{Name: event, Data: data}:

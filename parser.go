@@ -38,9 +38,9 @@ func (p *parser) next() *token {
 	case <-p.done:
 		return nil
 	case p.last = <-p.tokens:
-		if p.last.typ == tokEof {
-			return nil
-		}
+		// if p.last.typ == tokEof {
+		// 	return nil
+		// }
 
 		p.lastTrimmed = &token{typ: p.last.typ, value: strings.TrimSpace(p.last.value)}
 		return p.last
@@ -60,12 +60,11 @@ func (p *parser) Parse() *staticDynamicExpr {
 }
 
 func parseAllUntil(p *parser, delimiters []string) (ret staticDynamicExpr, endedWith string) {
-	for {
+	shouldBreak := false
+	for !shouldBreak {
 		next := p.next()
 
-		if next == nil {
-			break
-		}
+		shouldBreak = next.typ == tokEof
 
 		for _, delimiter := range delimiters {
 			if p.lastTrimmed.value == delimiter {
@@ -83,8 +82,8 @@ func parseAllUntil(p *parser, delimiters []string) (ret staticDynamicExpr, ended
 			}
 
 			ret.dynamic = append(ret.dynamic, parser(p))
-		} else if next.typ == tokOtherSource {
-			ret.static = append(ret.static, p.last.value)
+		} else if next.typ == tokOtherSource || next.typ == tokEof {
+			ret.static = append(ret.static, next.value)
 		} else {
 			notreached()
 		}
@@ -135,11 +134,11 @@ func parseIf(p *parser) expr {
 	ret.True, endedWith = parseAllUntil(p, []string{"else"})
 
 	gotElseBranch := endedWith == "else"
-	p.assertf(gotElseBranch, fmt.Sprintf("!gotElseBranch: %q", endedWith))
+	p.assertf(gotElseBranch, "!gotElseBranch: %q", endedWith)
 
 	if gotElseBranch {
 		ret.False, endedWith = parseAllUntil(p, []string{"end"})
-		p.assertf(endedWith == "end", fmt.Sprintf("expected \"end\", got: %q", endedWith))
+		p.assertf(endedWith == "end", "expected \"end\", got: %q", endedWith)
 	}
 
 	return &ret
@@ -157,7 +156,7 @@ func parseFor(p *parser) expr {
 	var endedWith string
 	ret.staticDynamicExpr, endedWith = parseAllUntil(p, []string{"end"})
 
-	p.assertf(endedWith == "end", fmt.Sprintf(`expected "end", got: %q`, endedWith))
+	p.assertf(endedWith == "end", `expected "end", got: %q`, endedWith)
 
 	return ret
 }

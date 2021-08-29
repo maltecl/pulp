@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
 
 	"github.com/gorilla/websocket"
 	"github.com/kr/pretty"
@@ -100,25 +101,21 @@ func ServeWebFiles() {
 }
 
 // TODO: the api needs to be improved ALOT
-func LiveHandler(route string, component LiveComponent) {
-	fmt.Println("was here")
+func LiveHandler(route string, newComponent func() LiveComponent) {
 
-	http.HandleFunc(route+"/bundle/bundle.js", func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Println("hit1")
+	http.HandleFunc(filepath.Join(route, "/bundle/bundle.js"), func(rw http.ResponseWriter, r *http.Request) {
 		http.ServeFile(rw, r, "web/bundle/bundle.js")
 	})
 
-	http.HandleFunc(route+"/", func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Println("hit2")
+	http.HandleFunc(filepath.Join(route, "/"), func(rw http.ResponseWriter, r *http.Request) {
 		http.ServeFile(rw, r, "web/index.html")
 	})
 
-	http.HandleFunc(route+"/ws", handler(component))
+	http.HandleFunc(filepath.Join(route, "/ws"), handler(newComponent))
 }
 
-func handler(component LiveComponent) http.HandlerFunc {
+func handler(newComponent func() LiveComponent) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Println("hit3")
 		errors := make(chan error, 2)
 
 		upgrader := websocket.Upgrader{}
@@ -135,19 +132,12 @@ func handler(component LiveComponent) http.HandlerFunc {
 
 		ctx, canc := context.WithCancel(context.Background())
 
-		patchesStream := New(ctx, component, events, errors, onMount)
+		patchesStream := New(ctx, newComponent(), events, errors, onMount)
 
 		// send mount message
 
 		{
-
-			mountedWith := <-onMount
-			fmt.Println("mounted: ", mountedWith.String())
-
-			payload, err := json.Marshal(mountedWith)
-
-			fmt.Println("payload: ", string(payload))
-
+			payload, err := json.Marshal(<-onMount)
 			if err != nil {
 				errors <- err
 			}
