@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -11,6 +12,7 @@ import (
 var (
 	inFilename  *string = flag.String("in", "", "name of the file you want to run the ast-replacer on")
 	outFilename *string = flag.String("out", "", "name of the file you want the result to be written to")
+	verbose     *bool   = flag.Bool("v", false, "if this value is true, the program is more chatty")
 )
 
 func init() {
@@ -31,6 +33,10 @@ func logic() error {
 	newFileContent, err := replace(*inFilename, string(fileContent))
 	if err != nil {
 		return err
+	}
+
+	if len(newFileContent) == 0 {
+		return fmt.Errorf("something went wrong. This probably means, that you have an error in %s", *inFilename)
 	}
 
 	err = ioutil.WriteFile(*outFilename, newFileContent, 0700)

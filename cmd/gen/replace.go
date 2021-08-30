@@ -14,14 +14,19 @@ import (
 	"golang.org/x/tools/go/ast/astutil"
 )
 
+func vPrintf(format string, args ...interface{}) {
+	if !*verbose {
+		return
+	}
+	fmt.Printf(format, args...)
+}
+
 func replace(sourceName, source string) ([]byte, error) {
 	fset := token.NewFileSet()
 	expr, err := parser.ParseFile(fset, sourceName, source, parser.AllErrors)
 	if err != nil {
 		return nil, err
 	}
-
-	// pretty.Print(expr)
 
 	result := astutil.Apply(expr, func(cr *astutil.Cursor) bool {
 		if source := detect(cr.Node()); source != nil {
@@ -30,12 +35,13 @@ func replace(sourceName, source string) ([]byte, error) {
 			g := &pulp.Generator{}
 			parser := pulp.NewParser(*source)
 			tree := parser.Parse()
+			vPrintf("ast: %v\n", pretty.Sprint(tree))
 			if parser.Error != nil {
-				fmt.Print(parser.Error)
+				fmt.Fprint(os.Stderr, parser.Error)
 				os.Exit(-1)
 			}
 			tree.Gen(g)
-			pretty.Print(tree)
+			vPrintf("gen: %v\n", g.Out())
 			cr.Replace(&ast.BasicLit{Value: g.Out()})
 			return false
 		}
@@ -43,7 +49,9 @@ func replace(sourceName, source string) ([]byte, error) {
 	}, nil)
 
 	retBuf := &bytes.Buffer{}
-	format.Node(retBuf, fset, result)
+	if err := format.Node(retBuf, fset, result); err != nil {
+		return nil, err
+	}
 
 	return retBuf.Bytes(), nil
 }

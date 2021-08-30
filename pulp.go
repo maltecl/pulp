@@ -218,10 +218,11 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 		}()
 
 		fmt.Printf("connection error: %v", <-errors)
+		canc()
+
 		if unmountable, ok := component.(UnMountable); ok {
 			unmountable.UnMount()
 		}
-		canc()
 		conn.Close()
 
 		wg.Wait()

@@ -25,3 +25,10 @@
 ## If
   - make it so that when the condition is `True` the dynamic values for the `False` `StaticDynamic` are not sent. 
   - When the condition later flips, those dynamic values are sent 
+  - assignments in if's are not working
+  ```handlebars
+  {{ if page := <long expression>; page == "chat" }} 
+      {{ page}}
+			{{ chatPage }}
+  {{ end }}
+  ```

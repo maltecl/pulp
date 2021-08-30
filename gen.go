@@ -91,9 +91,13 @@ func (e forExpr) Gen(g *Generator) id {
 	for %s {
 		%s.ManyDynamics = append(%s.ManyDynamics, pulp.Dynamics%s)
 	}
-	`, pretty.Sprint(e.static), e.rangeStr, string(currentID), string(currentID), sprintDynamic(e.dynamic, g))
+	`, pretty.Sprint(e.sd.static), e.rangeStr, string(currentID), string(currentID), sprintDynamic(e.sd.dynamic, g))
 
 	})
+}
+
+func (e keyedSectionExpr) Gen(g *Generator) id {
+	return g.WriteNamed("MARKER\n")
 }
 
 func sprintDynamic(dynamics []expr, g *Generator) string {

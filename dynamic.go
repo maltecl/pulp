@@ -217,3 +217,12 @@ func (old For) Diff(new interface{}) *Patches {
 		"ds": patches,
 	}
 }
+
+type keyedSection struct {
+	key interface{}
+	sd  StaticDynamic
+}
+
+// func (old keyedSection) Diff(new interface{}) *Patches {
+// 	return
+// }

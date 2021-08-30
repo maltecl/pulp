@@ -106,6 +106,7 @@ func init() {
 	parserMap = map[string]parserFunc{
 		"for": parseFor,
 		"if":  parseIf,
+		"key": parseKeyedSection,
 	}
 }
 
@@ -147,7 +148,7 @@ func parseIf(p *parser) expr {
 
 type forExpr struct {
 	rangeStr string
-	staticDynamicExpr
+	sd       staticDynamicExpr
 }
 
 func parseFor(p *parser) expr {
@@ -155,8 +156,22 @@ func parseFor(p *parser) expr {
 	ret.rangeStr = p.last.value[len("for "):]
 
 	var endedWith string
-	ret.staticDynamicExpr, endedWith = parseAllUntil(p, []string{"end"})
+	ret.sd, endedWith = parseAllUntil(p, []string{"end"})
+	p.assertf(endedWith == "end", `expected "end", got: %q`, endedWith)
 
+	return ret
+}
+
+type keyedSectionExpr struct {
+	keyString string
+	sd        staticDynamicExpr
+}
+
+func parseKeyedSection(p *parser) expr {
+	ret := keyedSectionExpr{keyString: p.last.value[len("key "):]}
+
+	var endedWith string
+	ret.sd, endedWith = parseAllUntil(p, []string{"end"})
 	p.assertf(endedWith == "end", `expected "end", got: %q`, endedWith)
 
 	return ret

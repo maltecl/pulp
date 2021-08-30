@@ -3,6 +3,7 @@ package pulp
 import (
 	"context"
 	"fmt"
+	"sync"
 )
 
 type Socket struct {
@@ -11,6 +12,8 @@ type Socket struct {
 	Err       error
 	context.Context
 	events chan<- Event
+
+	once sync.Once
 }
 
 type M map[string]interface{}
