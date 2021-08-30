@@ -131,15 +131,16 @@ func parseIf(p *parser) expr {
 	ret.condStr = p.last.value[len("if "):]
 
 	var endedWith string
-	ret.True, endedWith = parseAllUntil(p, []string{"else"})
+	ret.True, endedWith = parseAllUntil(p, []string{"else", "end"})
 
 	gotElseBranch := endedWith == "else"
-	p.assertf(gotElseBranch, "!gotElseBranch: %q", endedWith)
 
 	if gotElseBranch {
 		ret.False, endedWith = parseAllUntil(p, []string{"end"})
-		p.assertf(endedWith == "end", "expected \"end\", got: %q", endedWith)
+	} else {
+		ret.False = staticDynamicExpr{static: []string{}, dynamic: []expr{}}
 	}
+	p.assertf(endedWith == "end", "expected \"end\", got: %q", endedWith)
 
 	return &ret
 }
