@@ -218,7 +218,7 @@ func (old For) Diff(new interface{}) *Patches {
 	}
 }
 
-type KeyedSection struct {
+type keyedSection struct {
 	key interface{}
 	sd  StaticDynamic
 }

@@ -83,7 +83,7 @@ func parseAllUntil(p *parser, delimiters []string) (ret staticDynamicExpr, ended
 
 			ret.dynamic = append(ret.dynamic, parser(p))
 		} else if next.typ == tokOtherSource || next.typ == tokEof {
-			ret.static = append(ret.static, strings.ReplaceAll(strings.ReplaceAll(next.value, "\n", ""), "\t", ""))
+			ret.static = append(ret.static, next.value)
 		} else {
 			notreached()
 		}

@@ -7,6 +7,8 @@ import (
 )
 
 type Socket struct {
+	ID uint32
+
 	updates   chan Socket
 	lastState LiveComponent
 	Err       error
@@ -18,6 +20,7 @@ type Socket struct {
 
 type M map[string]interface{}
 
+// don't use this yet. this is not working perfectly
 func (s *Socket) Dispatch(event string, data M) {
 	select {
 	case <-s.Done():

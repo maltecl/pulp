@@ -8,10 +8,15 @@ import (
 	"net/http"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 
 	"github.com/gorilla/websocket"
 	"github.com/kr/pretty"
 )
+
+func init() {
+	fmt.Println("MARKER1")
+}
 
 type LiveComponent interface {
 	Mount(Socket)
@@ -29,9 +34,14 @@ type Event struct {
 	Data map[string]interface{}
 }
 
+var socketID = uint32(0)
+
 func New(ctx context.Context, component LiveComponent, events chan Event, errors chan<- error, onMount chan<- StaticDynamic) <-chan Patches {
 
-	socket := Socket{Context: ctx, updates: make(chan Socket), events: events}
+	socket := Socket{Context: ctx, updates: make(chan Socket), events: events, ID: socketID}
+	fmt.Printf("new socket: %d\n", socketID)
+
+	atomic.AddUint32(&socketID, 1)
 	patchesStream := make(chan Patches)
 
 	component.Mount(socket)
@@ -57,15 +67,21 @@ func New(ctx context.Context, component LiveComponent, events chan Event, errors
 			case <-ctx.Done():
 				break outer
 			case event := <-events:
+				fmt.Printf("socket %d event %v\n", socket.ID, pretty.Sprint(event))
 				component.HandleEvent(event, socket)
 				continue outer
 			case socket = <-socket.updates:
 				if socket.Err != nil {
 					errors <- socket.Err
+					return
 				}
+
+				// fmt.Printf("socket %v got updates: %v\n", socket.ID, pretty.Sprint(socket.lastState))
+
 				component = socket.lastState
 			}
 
+			fmt.Printf("socket %d render\n", socket.ID)
 			newRender := component.Render().(StaticDynamic)
 			patches := lastRender.Dynamic.Diff(newRender.Dynamic)
 			if patches == nil {
@@ -130,7 +146,7 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 			return
 		}
 
-		events := make(chan Event)
+		events := make(chan Event, 1024)
 		onMount := make(chan StaticDynamic)
 
 		ctx, canc := context.WithCancel(context.Background())
@@ -159,7 +175,6 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 		go func() {
 			defer wg.Done()
 			for patches := range patchesStream {
-				pretty.Println(patches)
 
 				payload, err := json.Marshal(patches)
 				if err != nil {
@@ -203,7 +218,7 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 					}
 				}
 
-				fmt.Println(msg)
+				// fmt.Println(msg)
 
 				t := msg["type"].(string)
 				delete(msg, "type")

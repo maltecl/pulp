@@ -10,6 +10,37 @@ import (
 type Generator struct {
 	idCounter    int
 	sourceWriter strings.Builder
+
+	scopes *scopeStack
+}
+
+type scopeStack struct {
+	prev *scopeStack
+	scope
+}
+
+type scope struct {
+	strings.Builder
+}
+
+func (g *Generator) pushScope() {
+	newScopeEntry := scopeStack{prev: g.scopes}
+	g.scopes = &newScopeEntry
+}
+
+func (g *Generator) popScope() string {
+	if g.scopes == nil {
+		return ""
+	}
+	ret := g.scopes.String()
+	g.scopes = g.scopes.prev
+	return ret
+}
+
+func (g *Generator) WriteScoped(source string) id {
+	ident := g.nextID()
+	g.scopes.WriteString(source)
+	return ident
 }
 
 func (g *Generator) WriteNamed(source string) id {
@@ -41,17 +72,15 @@ func (g *Generator) lastID() id {
 }
 
 func (r staticDynamicExpr) Gen(g *Generator) id {
+	staticsString := strings.Join(r.static, "{}")
+
 	dynamicString := &strings.Builder{}
 
-	if len(r.dynamic) > 0 {
-		dynamicString.WriteString(string(r.dynamic[0].Gen(g)))
-	}
-
-	for _, d := range r.dynamic[1:] {
+	for _, d := range r.dynamic {
 		dynamicString.WriteString(", " + string(d.Gen(g)))
 	}
 
-	return g.WriteNamed(fmt.Sprintf(`pulp.StaticDynamic{Static: %s , Dynamic: []interface{}{%s}}`, pretty.Sprint(r.static), dynamicString.String()))
+	return g.WriteNamed(fmt.Sprintf("pulp.NewStaticDynamic(%q %s)", staticsString, dynamicString.String()))
 }
 
 func (i *ifExpr) Gen(g *Generator) id {
