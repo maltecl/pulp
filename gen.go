@@ -41,15 +41,17 @@ func (g *Generator) lastID() id {
 }
 
 func (r staticDynamicExpr) Gen(g *Generator) id {
-	staticsString := strings.Join(r.static, "{}")
-
 	dynamicString := &strings.Builder{}
 
-	for _, d := range r.dynamic {
+	if len(r.dynamic) > 0 {
+		dynamicString.WriteString(string(r.dynamic[0].Gen(g)))
+	}
+
+	for _, d := range r.dynamic[1:] {
 		dynamicString.WriteString(", " + string(d.Gen(g)))
 	}
 
-	return g.WriteNamed(fmt.Sprintf("pulp.NewStaticDynamic(%q %s)", staticsString, dynamicString.String()))
+	return g.WriteNamed(fmt.Sprintf(`pulp.StaticDynamic{Static: %s , Dynamic: []interface{}{%s}}`, pretty.Sprint(r.static), dynamicString.String()))
 }
 
 func (i *ifExpr) Gen(g *Generator) id {
