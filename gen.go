@@ -8,10 +8,14 @@ import (
 )
 
 type Generator struct {
-	idCounter    int
-	sourceWriter strings.Builder
+	idCounter int
+	scopes    *scopeStack
+}
 
-	scopes *scopeStack
+func NewGenerator() *Generator {
+	g := Generator{}
+	g.pushScope()
+	return &g
 }
 
 type scopeStack struct {
@@ -37,21 +41,15 @@ func (g *Generator) popScope() string {
 	return ret
 }
 
-func (g *Generator) WriteScoped(source string) id {
-	ident := g.nextID()
-	g.scopes.WriteString(source)
-	return ident
-}
-
 func (g *Generator) WriteNamed(source string) id {
 	ident := g.nextID()
-	g.sourceWriter.WriteString(string(ident) + " := " + source)
+	g.scopes.WriteString(string(ident) + " := " + source)
 	return ident
 }
 
 func (g *Generator) WriteNamedWithID(source func(id) string) id {
 	ident := g.nextID()
-	g.sourceWriter.WriteString(string(ident) + " := " + source(ident))
+	g.scopes.WriteString(string(ident) + " := " + source(ident))
 	return ident
 }
 
@@ -59,7 +57,7 @@ func (g Generator) Out() string {
 	return fmt.Sprintf(`func() pulp.StaticDynamic {
 	%s
 	return %s
-}()`, g.sourceWriter.String(), string(g.lastID()))
+}()`, g.popScope(), string(g.lastID()))
 }
 
 func (g *Generator) nextID() id {
@@ -113,17 +111,26 @@ func (e rawStringExpr) Gen(g *Generator) id {
 
 func (e forExpr) Gen(g *Generator) id {
 	return g.WriteNamedWithID(func(currentID id) string {
-		return fmt.Sprintf(`pulp.For{
+		ret := fmt.Sprintf(`pulp.For{
 		Statics: %s,
 		ManyDynamics: make([]pulp.Dynamics, 0),
 		DiffStrategy: pulp.Append,
 	}
 
 	for %s {
-		%s.ManyDynamics = append(%s.ManyDynamics, pulp.Dynamics%s)
-	}
-	`, pretty.Sprint(e.sd.static), e.rangeStr, string(currentID), string(currentID), sprintDynamic(e.sd.dynamic, g))
+	`, pretty.Sprint(e.sd.static), e.rangeStr)
 
+		g.pushScope()
+		idStr := string(currentID)
+		ids := sprintDynamic(e.sd.dynamic, g)
+		scopeStr := g.popScope()
+
+		ret += fmt.Sprintf(`%s
+		%s.ManyDynamics = append(%s.ManyDynamics, pulp.Dynamics%s)
+		}
+	`, scopeStr, idStr, idStr, ids)
+
+		return ret
 	})
 }
 

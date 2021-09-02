@@ -32,7 +32,7 @@ func replace(sourceName, source string) ([]byte, error) {
 		if source := detect(cr.Node()); source != nil {
 			*source = (*source)[1 : len(*source)-1] // removes the backticks or the " from the string literal
 
-			g := &pulp.Generator{}
+			g := pulp.NewGenerator()
 			parser := pulp.NewParser(*source)
 			tree := parser.Parse()
 			vPrintf("ast: %v\n", pretty.Sprint(tree))
