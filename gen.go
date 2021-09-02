@@ -78,7 +78,7 @@ func (r staticDynamicExpr) Gen(g *Generator) id {
 		dynamicString.WriteString(", " + string(d.Gen(g)))
 	}
 
-	return g.WriteNamed(fmt.Sprintf("pulp.NewStaticDynamic(%q %s)", staticsString, dynamicString.String()))
+	return g.WriteNamed(fmt.Sprintf("pulp.NewStaticDynamic(%q %s)\n", staticsString, dynamicString.String()))
 }
 
 func (i *ifExpr) Gen(g *Generator) id {
@@ -135,7 +135,11 @@ func (e forExpr) Gen(g *Generator) id {
 }
 
 func (e keyedSectionExpr) Gen(g *Generator) id {
-	return g.WriteNamed("MARKER\n")
+	return g.WriteNamed(fmt.Sprintf(`pulp.KeyedSection{
+		Key: %s,
+		StaticDynamic: %s,
+	}
+	`, e.keyString, e.sd.Gen(g)))
 }
 
 func sprintDynamic(dynamics []expr, g *Generator) string {
