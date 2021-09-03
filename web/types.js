@@ -3,6 +3,11 @@ const set = x => x !== undefined
 
 function classify(it) {
 
+
+    if (KEYED.detect(it)) {
+        return new KEYED(it)
+    }
+
     if (SD.detect(it)) {
         return new SD(it)
     }
@@ -76,6 +81,8 @@ class SD {
 class IF {
     static detect = (it) => set(it.c) || set(it.f) || set(it.t)
 
+    type_ = "IF"
+
     constructor({ c, t, f }) {
         this.c = c
         this.t = new SD(t)
@@ -104,13 +111,13 @@ class FOR {
     constructor({ strategy, ds, s }) {
         this.strategy = strategy
         this.s = s
-        this.ds = ds.map(x => x.map(classify))
+        this.ds = Object.keys(ds).reduce((acc, key) => ({...acc, [key]: ds[key].map(classify) }), {})
     }
 
     render() {
         let out = ""
 
-        this.ds.forEach(dynamic => {
+        Object.values(this.ds).forEach(dynamic => {
             out += SD.render({ s: this.s, d: dynamic })
         })
 
@@ -118,24 +125,54 @@ class FOR {
     }
 
     patch(patches) {
-        const maxKey = Object.keys(patches.ds).map(k => parseInt(k)).reduce(Math.max, -1)
-        const shouldResize = maxKey >= this.ds.length
-        console.log(maxKey, shouldResize)
+        let newDS = {...this.ds }
 
-
-        if (shouldResize) {
-            switch (this.strategy) {
-                case FOR.strategy.append:
-                    return new FOR({...this, ds: SD.patchListOfDynamics([...this.ds, null], patches.ds) })
-                default:
-                    console.error("should not be reached in switch")
+        for (const key in patches.ds) {
+            if (set(this.ds[key])) {
+                newDS[key] = SD.patchListOfDynamics(this.ds[key], patches.ds[key])
+            } else {
+                console.log("MARKER NEW")
+                newDS[key] = patches.ds[key].map(classify)
             }
         }
 
-        return new FOR({...this, ds: SD.patchListOfDynamics(this.ds, patches.ds) })
-
+        return new FOR({...this, ds: newDS })
     }
+
+    // old 
+    // patch(patches) {
+    //     const maxKey = Object.keys(patches.ds).map(k => parseInt(k)).reduce(Math.max, -1)
+    //     const shouldResize = maxKey >= this.ds.length
+    //     console.log(maxKey, shouldResize)
+
+
+    //     if (shouldResize) {
+    //         switch (this.strategy) {
+    //             case FOR.strategy.append:
+    //                 return new FOR({...this, ds: SD.patchListOfDynamics([...this.ds, null], patches.ds) })
+    //             default:
+    //                 console.error("should not be reached in switch")
+    //         }
+    //     }
+
+    //     return new FOR({...this, ds: SD.patchListOfDynamics(this.ds, patches.ds) })
+
+    // }
 }
 
+
+
+class KEYED {
+    static detect = (it) => set(it.key);
+
+    constructor({ key, s, d }) {
+        this.key = key
+        this.sd = new SD({ s, d })
+    }
+
+    render() {
+        return this.sd.render()
+    }
+}
 
 module.exports = { SD, FOR, IF }

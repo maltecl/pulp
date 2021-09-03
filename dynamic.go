@@ -113,13 +113,21 @@ func (d Dynamics) Diff(new interface{}) *Patches {
 	ret := Patches{}
 
 	for i := 0; i < len(d); i++ {
+
+		var key string
+		if keyed, ok := d[i].(KeyedSection); ok {
+			key = fmt.Sprint(keyed.Key)
+		} else {
+			key = fmt.Sprint(i)
+		}
+
 		if d1Diffable, isDiffable := d[i].(Diffable); isDiffable {
 			if diff := d1Diffable.Diff(new_[i]); diff != nil {
-				ret[fmt.Sprint(i)] = diff
+				ret[key] = diff
 			}
 		} else {
 			if !cmp.Equal(d[i], new_[i]) {
-				ret[fmt.Sprint(i)] = new_[i]
+				ret[key] = new_[i]
 			}
 		}
 	}
@@ -168,8 +176,8 @@ func (old If) Diff(new interface{}) *Patches {
 var _ RenderDiff = For{}
 
 type For struct {
-	Statics      []string   `json:"s"`
-	ManyDynamics []Dynamics `json:"ds"`
+	Statics      []string            `json:"s"`
+	ManyDynamics map[string]Dynamics `json:"ds"`
 	DiffStrategy `json:"strategy"`
 }
 
@@ -195,19 +203,24 @@ func (old For) Diff(new interface{}) *Patches {
 
 	patches := Patches{}
 
-	for i, dynamics := range old.ManyDynamics {
-		if diff := dynamics.Diff(new_.ManyDynamics[i]); diff != nil {
-			patches[fmt.Sprint(i)] = diff // TODO: check here, if the dynamic value has a key and use that instead. default to the slower index approach seen here
+	for key, newVal := range new_.ManyDynamics {
+		if oldVal, notNew := old.ManyDynamics[key]; notNew {
+			if diff := oldVal.Diff(newVal); diff != nil {
+				patches[key] = diff
+			}
+		} else {
+			patches[key] = newVal
 		}
 	}
 
-	if hasNewElements := len(old.ManyDynamics) < len(new_.ManyDynamics); hasNewElements {
-		base := len(old.ManyDynamics)
-		newElements := new_.ManyDynamics[base:]
-		for i, dynamics := range newElements {
-			patches[fmt.Sprint(i+base)] = dynamics
-		}
-	}
+	// TODO
+	// if hasNewElements := len(old.ManyDynamics) < len(new_.ManyDynamics); hasNewElements {
+	// 	base := len(old.ManyDynamics)
+	// 	newElements := new_.ManyDynamics[base:]
+	// 	for i, dynamics := range newElements {
+	// 		patches[fmt.Sprint(i+base)] = dynamics
+	// 	}
+	// }
 
 	if patches.IsEmpty() {
 		return nil
@@ -219,10 +232,6 @@ func (old For) Diff(new interface{}) *Patches {
 }
 
 type KeyedSection struct {
-	Key           interface{}
-	StaticDynamic StaticDynamic
+	Key interface{} `json:"key"`
+	StaticDynamic
 }
-
-// func (old keyedSection) Diff(new interface{}) *Patches {
-// 	return
-// }

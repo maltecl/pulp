@@ -131,6 +131,7 @@ class PulpSocket {
 
                         cachedSD = new SD(JSON.parse(message))
                         console.log(cachedSD)
+                        Object.assign(globalThis, { cachedSD })
 
 
                         const temp = document.createElement("div")

@@ -107,7 +107,7 @@ func (e forExpr) Gen(g *Generator) id {
 	return g.WriteNamedWithID(func(currentID id) string {
 		ret := fmt.Sprintf(`pulp.For{
 		Statics: %s,
-		ManyDynamics: make([]pulp.Dynamics, 0),
+		ManyDynamics: make(map[string]pulp.Dynamics),
 		DiffStrategy: pulp.Append,
 	}
 
@@ -120,9 +120,9 @@ func (e forExpr) Gen(g *Generator) id {
 		scopeStr := g.popScope()
 
 		ret += fmt.Sprintf(`%s
-		%s.ManyDynamics = append(%s.ManyDynamics, pulp.Dynamics%s)
+		%s.ManyDynamics[%s] =  pulp.Dynamics%s
 		}
-	`, scopeStr, idStr, idStr, ids)
+	`, scopeStr, idStr, e.keyStr, ids)
 
 		return ret
 	})
