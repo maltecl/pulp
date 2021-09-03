@@ -41,9 +41,9 @@ func (g *Generator) popScope() string {
 	return ret
 }
 
-func (g *Generator) WriteNamed(source string) id {
+func (g *Generator) WriteNamed(format string, args ...interface{}) id {
 	ident := g.nextID()
-	g.scopes.WriteString(string(ident) + " := " + source)
+	g.scopes.WriteString(string(ident) + " := " + fmt.Sprintf(format, args...))
 	return ident
 }
 
@@ -70,21 +70,16 @@ func (g *Generator) lastID() id {
 }
 
 func (r staticDynamicExpr) Gen(g *Generator) id {
-	staticsString := strings.Join(r.static, "{}")
-
-	dynamicString := &strings.Builder{}
-
-	for _, d := range r.dynamic {
-		dynamicString.WriteString(", " + string(d.Gen(g)))
+	return g.WriteNamed(`pulp.StaticDynamic{
+		Static:  %s,
+		Dynamic: pulp.Dynamics%s,
 	}
-
-	return g.WriteNamed(fmt.Sprintf("pulp.NewStaticDynamic(%q %s)\n", staticsString, dynamicString.String()))
+	`, pretty.Sprint(r.static), sprintDynamic(r.dynamic, g))
 }
 
 func (i *ifExpr) Gen(g *Generator) id {
 	return g.WriteNamed(
-		fmt.Sprintf(
-			`pulp.If{
+		`pulp.If{
 		Condition: %s,
 		True: pulp.StaticDynamic{
 			Static:  %s,
@@ -96,12 +91,11 @@ func (i *ifExpr) Gen(g *Generator) id {
 		},
 	}
 	`,
-			i.condStr,
-			pretty.Sprint(i.True.static),
-			sprintDynamic(i.True.dynamic, g),
-			pretty.Sprint(i.False.static),
-			sprintDynamic(i.False.dynamic, g),
-		),
+		i.condStr,
+		pretty.Sprint(i.True.static),
+		sprintDynamic(i.True.dynamic, g),
+		pretty.Sprint(i.False.static),
+		sprintDynamic(i.False.dynamic, g),
 	)
 }
 
@@ -135,15 +129,14 @@ func (e forExpr) Gen(g *Generator) id {
 }
 
 func (e keyedSectionExpr) Gen(g *Generator) id {
-	return g.WriteNamed(fmt.Sprintf(`pulp.KeyedSection{
+	return g.WriteNamed(`pulp.KeyedSection{
 		Key: %s,
 		StaticDynamic: %s,
 	}
-	`, e.keyString, e.sd.Gen(g)))
+	`, e.keyString, e.sd.Gen(g))
 }
 
 func sprintDynamic(dynamics []expr, g *Generator) string {
-
 	ret := &strings.Builder{}
 
 	for _, e := range dynamics {
@@ -154,10 +147,6 @@ func sprintDynamic(dynamics []expr, g *Generator) string {
 		}
 		ret.WriteString(", ")
 	}
-
-	// ret := fmt.Sprint(dynamics)
-	// ret = strings.ReplaceAll(ret, " ", ", ")
-	// ret = ret[1 : len(ret)-1]
 
 	retStr := ret.String()
 
