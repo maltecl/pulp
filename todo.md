@@ -14,6 +14,12 @@
 
 ### run go import on the output file
 
+### make it so, that multiple payloads can be sent, for the same event
+```handlebars
+  <button :click="goto" :value="page2" :click="submit-some-text"> submit </button>
+```
+
+
 ### last token after goSource seems to be missing 
 ```handlebars
 	<ul>

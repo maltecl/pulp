@@ -128,10 +128,11 @@ class FOR {
         let newDS = {...this.ds }
 
         for (const key in patches.ds) {
-            if (set(this.ds[key])) {
+            if (patches.ds[key] === null) { // this element should be deleted
+                delete newDS[key]
+            } else if (set(this.ds[key])) { // old elemenent. patch it!
                 newDS[key] = SD.patchListOfDynamics(this.ds[key], patches.ds[key])
-            } else {
-                console.log("MARKER NEW")
+            } else { // new element
                 newDS[key] = patches.ds[key].map(classify)
             }
         }
@@ -139,25 +140,6 @@ class FOR {
         return new FOR({...this, ds: newDS })
     }
 
-    // old 
-    // patch(patches) {
-    //     const maxKey = Object.keys(patches.ds).map(k => parseInt(k)).reduce(Math.max, -1)
-    //     const shouldResize = maxKey >= this.ds.length
-    //     console.log(maxKey, shouldResize)
-
-
-    //     if (shouldResize) {
-    //         switch (this.strategy) {
-    //             case FOR.strategy.append:
-    //                 return new FOR({...this, ds: SD.patchListOfDynamics([...this.ds, null], patches.ds) })
-    //             default:
-    //                 console.error("should not be reached in switch")
-    //         }
-    //     }
-
-    //     return new FOR({...this, ds: SD.patchListOfDynamics(this.ds, patches.ds) })
-
-    // }
 }
 
 

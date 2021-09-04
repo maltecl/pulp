@@ -203,24 +203,22 @@ func (old For) Diff(new interface{}) *Patches {
 
 	patches := Patches{}
 
-	for key, newVal := range new_.ManyDynamics {
-		if oldVal, notNew := old.ManyDynamics[key]; notNew {
-			if diff := oldVal.Diff(newVal); diff != nil {
-				patches[key] = diff
+	for key, val := range new_.ManyDynamics {
+		if oldVal, ok := old.ManyDynamics[key]; ok {
+			if diff := oldVal.Diff(val); diff != nil {
+				patches[key] = diff // old value, push the diff
 			}
 		} else {
-			patches[key] = newVal
+			patches[key] = val // new value, push the whole state
 		}
 	}
 
-	// TODO
-	// if hasNewElements := len(old.ManyDynamics) < len(new_.ManyDynamics); hasNewElements {
-	// 	base := len(old.ManyDynamics)
-	// 	newElements := new_.ManyDynamics[base:]
-	// 	for i, dynamics := range newElements {
-	// 		patches[fmt.Sprint(i+base)] = dynamics
-	// 	}
-	// }
+	for key := range old.ManyDynamics {
+		if _, ok := new_.ManyDynamics[key]; !ok {
+			patches[key] = nil // deleted value, push nil
+			fmt.Println("DIFF: NIL")
+		}
+	}
 
 	if patches.IsEmpty() {
 		return nil

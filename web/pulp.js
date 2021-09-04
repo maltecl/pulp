@@ -37,9 +37,12 @@ const morphdomHooks = socket => ({
 
 
 class Pulp {
-    static CLICK = "pulp-click"
-    static INPUT = "pulp-input"
-    static VALUES = "pulp-value"
+
+    static DEBUG = true
+
+    static CLICK = ":click"
+    static INPUT = ":input"
+    static VALUES = ":value"
     static SUBMIT = "pulp-submit"
 
 
@@ -78,7 +81,14 @@ class Pulp {
             }
 
 
-            socket.ws.send(JSON.stringify(payload, null, 0))
+            const str = JSON.stringify(payload, null, 0)
+
+            if (Pulp.DEBUG) {
+                console.log("payload: ", str)
+            }
+
+
+            socket.ws.send(str)
         }
     }
 
