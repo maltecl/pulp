@@ -38,3 +38,22 @@
 			{{ chatPage }}
   {{ end }}
   ```
+
+
+## SD flattening
+perform some sort of flattening on nested static dynamics, such that 
+```handlebars
+{{ for username := range c.users :key username }}
+  {{ c.userTile(username) }}
+{{ end }}
+  ```
+will perform just as well as 
+
+```handlebars
+{{ for username := range c.users :key username }}
+  <li class="collection-item {{if username == c.username }} active {{ end }}">
+    {{ username }}
+  </li>
+{{ end }}
+  ```
+
