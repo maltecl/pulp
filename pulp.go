@@ -220,8 +220,8 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 
 				// fmt.Println(msg)
 
-				t := msg["type"].(string)
-				delete(msg, "type")
+				t := msg["name"].(string)
+				delete(msg, "name")
 
 				select {
 				case <-ctx.Done():

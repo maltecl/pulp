@@ -1,33 +1,6 @@
 const morphdom = require("morphdom")
-const { FOR, IF, SD } = require("./types")
-
-
-/*
-
-
-const inputEvents = [{
-    applyWhen(node) {
-        return node.constructor.name in ["HTMLInputElement", "HTMLTextAreaElement"]
-    },
-    on: "keydown", // uses the "keydonw" HTML Event
-    tag: "key-submit", // is tagged with "key-submit". in the source code it looks like this: ":key-submit=<name>"
-    handler(e, name) {
-        if (e.keyCode !== 13) {
-            return null // reject the event. Payload is not sent
-        }
-        return { name }
-    },
-}]
-
-const socket = new PulpSocket("mount", {
-    events: [
-        ...inputEvents,
-    ],
-
-})
-
-*/
-
+const { defaultTags, ...otherTags } = require("./tags")
+const { SD, FOR } = require("./types")
 
 
 const morphdomHooks = (socket, handlers) => ({
@@ -38,23 +11,16 @@ const morphdomHooks = (socket, handlers) => ({
         return node;
     },
     onNodeAdded: function(node) {
-        console.log("added")
-
-
         for (const { applyWhen, on, tag, handler }
             of handlers) {
 
-            console.log("MARKER 2")
             if (!applyWhen(node)) {
                 continue
             }
-            console.log("MARKER 3")
 
             if (!node.hasAttribute(tag) && !node.hasAttribute(":" + tag)) {
                 continue
             }
-
-            console.log("MARKER 4")
 
 
             let eventName = node.getAttribute(tag)
@@ -68,20 +34,14 @@ const morphdomHooks = (socket, handlers) => ({
                     return
                 }
 
-                payload = { type: payload.name }
-
-                const value = node.getAttribute(Pulp.VALUES)
-                if (value !== null && value.trim() !== "") {
-                    payload = {...payload, value: value }
+                const values = node.getAttribute(":values")
+                if (values !== null && values.trim() !== "") {
+                    payload = {...payload, value: values }
                 }
 
                 socket.ws.send(JSON.stringify(payload, null, 0))
             })
         }
-
-        const maybeHandler = Pulp.addHandlersForElementNames(socket)[node.constructor.name]
-
-        maybeHandler && maybeHandler(node)
     },
     onBeforeElUpdated: function(fromEl, toEl) {
         return true;
@@ -93,8 +53,8 @@ const morphdomHooks = (socket, handlers) => ({
         return true;
     },
     onNodeDiscarded: function(node) {
-        const maybeHandler = Pulp.removeHandlersForElementNames(socket)[node.constructor.name]
-        maybeHandler && maybeHandler(node)
+        // note: all event-listeners should be removed automatically, as no one holds reference of the node 
+        // see: https://stackoverflow.com/questions/12528049/if-a-dom-element-is-removed-are-its-listeners-also-removed-from-memory
     },
     onBeforeElChildrenUpdated: function(fromEl, toEl) {
         return true;
@@ -102,85 +62,9 @@ const morphdomHooks = (socket, handlers) => ({
     childrenOnly: false
 })
 
-// temp0.addEventListener("keydown", e => console.log(e))
-class Pulp {
-
-    static DEBUG = true
-
-    static CLICK = ":click"
-    static INPUT = ":input"
-    static VALUES = ":value"
-    static SUBMIT = "pulp-submit"
-
-
-    static addHandlersForElementNames = socket => ({
-        "HTMLButtonElement": (node) => Pulp.addHandler(socket, node, Pulp.CLICK, "click"),
-        "HTMLInputElement": (node) => Pulp.addHandler(socket, node, Pulp.INPUT, "input", (node, e) => (["value", node.value])),
-    })
-
-    static removeHandlersForElementNames = socket => ({
-        "HTMLButtonElement": (node) => Pulp.removeHandler(socket, node, Pulp.CLICK, "click"),
-        "HTMLInputElement": (node) => Pulp.removeHandler(socket, node, Pulp.INPUT, "input"),
-    })
-
-    static handlerForNode(socket, node, pulpAttr, includeValues) {
-        return (e) => {
-            let payload = {
-                type: node.getAttribute(pulpAttr),
-            }
-
-
-
-            includeValues && includeValues.map(iv => iv(node, e)).forEach((maybeKeyVal) => {
-                if (!maybeKeyVal) {
-                    return
-                }
-
-                const [key, value] = maybeKeyVal
-
-
-                payload = {...payload, [key]: value }
-            })
-
-            const value = node.getAttribute(Pulp.VALUES)
-            if (value !== null && value.trim().length !== 0) {
-                payload = {...payload, value: value }
-            }
-
-
-            const str = JSON.stringify(payload, null, 0)
-
-            if (Pulp.DEBUG) {
-                console.log("payload: ", str)
-            }
-
-
-            socket.ws.send(str)
-        }
-    }
-
-    static addHandler(socket, node, pulpAttr, eventType, ...includeValues) {
-        if (node.hasAttribute(pulpAttr)) {
-            node.addEventListener(eventType, Pulp.handlerForNode(socket, node, pulpAttr, includeValues))
-        }
-    }
-
-    static removeHandler(socket, node, pulpAttr, eventType) {
-        if (node.hasAttribute(pulpAttr)) {
-            node.removeEventListener(eventType, Pulp.handlerForNode(socket, node, pulpAttr))
-        }
-    }
-}
-
-
-
-
-
-
-
 class PulpSocket {
 
-    constructor(mountID, { events } = { events: [] }) {
+    constructor(mountID, { events, debug } = { events: [], debug: false }, ) {
 
         let cachedSD = {}; // TODO: make this better somehow. it works for now 
         let ws = null;
@@ -195,7 +79,7 @@ class PulpSocket {
         Object.assign(globalThis, { PulpSocket: this })
 
 
-        const hooks = morphdomHooks({ ws }, events)
+        const hooks = morphdomHooks({ ws }, [...Object.values(defaultTags), ...events])
 
         ws.onmessage = ({ data }) => {
             data.text()
@@ -205,14 +89,13 @@ class PulpSocket {
 
 
                     if (!hasMounted) {
-
                         cachedSD = new SD(JSON.parse(message))
                         console.log(cachedSD)
                         Object.assign(globalThis, { cachedSD })
 
 
                         const temp = document.createElement("div")
-                        temp.id = "mount"
+                        temp.id = mountID
                         temp.innerHTML = cachedSD.render()
                         morphdom(mount, temp, hooks)
 
@@ -220,7 +103,9 @@ class PulpSocket {
                         return
                     }
 
-                    console.log("got patch: ", message)
+                    if (debug) {
+                        console.log("got patch: ", message)
+                    }
 
                     const patches = JSON.parse(message)
 
@@ -230,7 +115,7 @@ class PulpSocket {
                     Object.assign(globalThis, { cachedSD })
 
                     const temp = document.createElement("div")
-                    temp.id = "mount"
+                    temp.id = mountID
                     const lastRender = cachedSD.render()
                     Object.assign(globalThis, { lastRender })
                     temp.innerHTML = lastRender
@@ -242,8 +127,4 @@ class PulpSocket {
     }
 }
 
-
-
-
-
-module.exports = { PulpSocket, Pulp }
+module.exports = { PulpSocket, tags: {...defaultTags, ...otherTags } }
