@@ -9,13 +9,17 @@ import (
 type Socket struct {
 	ID uint32
 
-	updates   chan Socket
+	updates   chan LiveComponent
 	lastState LiveComponent
 	Err       error
 	context.Context
 	events chan<- Event
 
 	once sync.Once
+
+	flash struct {
+		err, warning, info *string
+	}
 }
 
 type M map[string]interface{}
@@ -38,11 +42,31 @@ func (s *Socket) Changes(state LiveComponent) *Socket {
 	return s
 }
 
+func (s *Socket) FlashError(route string) {
+}
+
+func (s *Socket) FlashInfo(route string) {
+}
+
+func (s *Socket) FlashWarning(route string) {
+}
+
+func (s *Socket) Redirect(route string) {
+
+}
+
 func (s Socket) Do() {
 	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				fmt.Printf("socket panic: %d\n", s.ID)
+			}
+		}()
+
 		select {
 		case <-s.Context.Done():
-		case s.updates <- s:
+			fmt.Println("socket done: ", s.ID)
+		case s.updates <- s.lastState:
 		}
 	}()
 }

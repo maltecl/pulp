@@ -7,20 +7,21 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
-	"sync"
 	"sync/atomic"
 
 	"github.com/gorilla/websocket"
-	"github.com/kr/pretty"
+	"golang.org/x/sync/errgroup"
 )
 
 func init() {
 	fmt.Println("MARKER1")
 }
 
+type Assets interface{}
+
 type LiveComponent interface {
 	Mount(Socket)
-	Render() HTML // guranteed to be StaticDynamic after code generation
+	Render() HTML // HTML guranteed to be StaticDynamic after code generation
 	HandleEvent(Event, Socket)
 	Name() string
 }
@@ -36,69 +37,73 @@ type Event struct {
 
 var socketID = uint32(0)
 
-func New(ctx context.Context, component LiveComponent, events chan Event, errors chan<- error, onMount chan<- StaticDynamic) <-chan Patches {
+func New(ctx context.Context, component LiveComponent, events chan Event) (*StaticDynamic, <-chan Patches, <-chan error) {
 
-	socket := Socket{Context: ctx, updates: make(chan Socket), events: events, ID: socketID}
+	socket := Socket{Context: ctx, updates: make(chan LiveComponent, 10), events: events, ID: socketID}
 	fmt.Printf("new socket: %d\n", socketID)
 
 	atomic.AddUint32(&socketID, 1)
+
+	errors := make(chan error)
 	patchesStream := make(chan Patches)
 
 	component.Mount(socket)
-	socket = <-socket.updates
-	if socket.Err != nil {
-		errors <- socket.Err
-		return nil
-	}
 
-	lastRender := component.Render().(StaticDynamic)
-	go func() { onMount <- lastRender }()
+	initialRender := component.Render().(StaticDynamic)
+	lastRender := initialRender
 	// onMount is closed
 
 	go func() {
-		defer func() {
-			close(socket.updates)
-			close(patchesStream)
-		}()
+		<-socket.Done()
+		fmt.Printf("socket done %d\n", socket.ID)
+	}()
+
+	go func() {
 
 	outer:
 		for {
 			select {
 			case <-ctx.Done():
-				break outer
+				return
 			case event := <-events:
-				fmt.Printf("socket %d event %v\n", socket.ID, pretty.Sprint(event))
 				component.HandleEvent(event, socket)
 				continue outer
-			case socket = <-socket.updates:
+			case newState, ok := <-socket.updates:
+				if !ok {
+					return
+				}
 				if socket.Err != nil {
 					errors <- socket.Err
 					return
 				}
 
-				// fmt.Printf("socket %v got updates: %v\n", socket.ID, pretty.Sprint(socket.lastState))
-
-				component = socket.lastState
+				component = newState
 			}
 
 			fmt.Printf("socket %d render\n", socket.ID)
 			newRender := component.Render().(StaticDynamic)
 			patches := lastRender.Dynamic.Diff(newRender.Dynamic)
 			if patches == nil {
-				log.Println("empty patches")
 				continue
 			}
 
 			lastRender = newRender
 			select {
 			case <-ctx.Done():
-				break outer
+				return
 			case patchesStream <- *patches:
 			}
 		}
 	}()
 
-	return patchesStream
+	go func() {
+		<-socket.Done()
+		close(errors)
+		close(patchesStream)
+		close(socket.updates)
+	}()
+
+	return &initialRender, patchesStream, errors
 }
 
 type HTML interface{ HTML() }
@@ -117,6 +122,11 @@ func ServeWebFiles() {
 	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
 		http.ServeFile(rw, r, "web/index.html")
 	})
+
+	http.HandleFunc("/index.css", func(rw http.ResponseWriter, r *http.Request) {
+		http.ServeFile(rw, r, "web/index.css")
+	})
+
 }
 
 // TODO: the api needs to be improved ALOT
@@ -133,9 +143,12 @@ func LiveHandler(route string, newComponent func() LiveComponent) {
 	http.HandleFunc(filepath.Join(route, "/ws"), handler(newComponent))
 }
 
+var i = 0
+
 func handler(newComponent func() LiveComponent) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		errors := make(chan error, 2)
+		id := i
+		i++
 
 		upgrader := websocket.Upgrader{}
 
@@ -147,101 +160,99 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 		}
 
 		events := make(chan Event, 1024)
-		onMount := make(chan StaticDynamic)
 
-		ctx, canc := context.WithCancel(context.Background())
+		errGroup, ctx := errgroup.WithContext(context.Background())
 
 		component := newComponent()
-		patchesStream := New(ctx, component, events, errors, onMount)
+		initialRender, patchesStream, componentErrors := New(ctx, component, events)
 
 		// send mount message
 
-		{
-			payload, err := json.Marshal(<-onMount)
-			if err != nil {
-				errors <- err
-			}
+		conn.SetCloseHandler(func(code int, text string) error {
+			fmt.Println("CLOSED")
+			return nil
+		})
 
-			err = conn.WriteMessage(websocket.BinaryMessage, payload)
-			if err != nil {
-				errors <- err
-			}
-			close(onMount)
+		payload, err := json.Marshal(*initialRender)
+		if err != nil {
+			rw.WriteHeader(http.StatusBadRequest)
+			return
 		}
 
-		wg := &sync.WaitGroup{}
+		if err = conn.WriteMessage(websocket.BinaryMessage, payload); err != nil {
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for patches := range patchesStream {
-
-				payload, err := json.Marshal(patches)
-				if err != nil {
-					select {
-					case errors <- err:
-					case <-ctx.Done():
-						return
-					}
-				}
-
-				err = conn.WriteMessage(websocket.BinaryMessage, payload)
-				if err != nil {
-					select {
-					case errors <- err:
-					case <-ctx.Done():
-						return
-					}
-				}
-
-			}
+		errGroup.Go(func() error {
 			select {
-			case errors <- nil:
 			case <-ctx.Done():
-				return
+				return ctx.Err()
+			case err := <-componentErrors:
+				return err
 			}
-		}()
+		})
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		errGroup.Go(func() error {
+			for {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case patches := <-patchesStream:
+
+					payload, err := json.Marshal(patches)
+					if err != nil {
+						return err
+					}
+
+					err = conn.WriteMessage(websocket.BinaryMessage, payload)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		})
+
+		errGroup.Go(func() error {
 			for {
 				var msg = map[string]interface{}{}
 
 				err := conn.ReadJSON(&msg)
 				if err != nil {
-					select {
-					case errors <- err:
-						return
-					case <-ctx.Done():
-						return
-					}
+					return err
 				}
-
-				// fmt.Println(msg)
 
 				t := msg["name"].(string)
 				delete(msg, "name")
 
 				select {
 				case <-ctx.Done():
-					return
+					return ctx.Err()
 				case events <- Event{Name: t, Data: msg}:
 				}
 			}
+		})
+
+		go func() {
+			defer func() {
+				if err := recover(); err != nil {
+					fmt.Printf("outer socket panic: %d\n", id)
+				}
+			}()
 
 		}()
 
-		fmt.Printf("connection error: %v", <-errors)
-		canc()
+		if err := errGroup.Wait(); err != nil {
+			log.Println("errGroup.Error: ", err)
+		}
+		// canc()
+		log.Println("done with: ", err)
 
 		if unmountable, ok := component.(UnMountable); ok {
 			unmountable.UnMount()
 		}
+		close(events)
 		conn.Close()
 
-		wg.Wait()
-		close(events)
-		close(errors)
 	}
 }
