@@ -102,14 +102,15 @@ class IF {
 
 
 class FOR {
-    static strategy = {
-        append: 0,
-    }
+    // static strategy = {
+    //     append: 0,
+    //     prepend: 1,
+    // }
 
     static detect = (it) => set(it.ds) /* holds true for both the initial server push and the patches*/
 
-    constructor({ strategy, ds, s }) {
-        this.strategy = strategy
+    constructor({ /*strategy,*/ ds, s }) {
+        // this.strategy = strategy
         this.s = s
         this.ds = Object.keys(ds).reduce((acc, key) => ({...acc, [key]: ds[key].map(classify) }), {})
     }

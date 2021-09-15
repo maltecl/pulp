@@ -108,7 +108,6 @@ func (e forExpr) Gen(g *Generator) id {
 		ret := fmt.Sprintf(`pulp.For{
 		Statics: %s,
 		ManyDynamics: make(map[string]pulp.Dynamics),
-		DiffStrategy: pulp.Append,
 	}
 
 	for %s {

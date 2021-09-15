@@ -122,30 +122,31 @@ func (old If) Diff(new_ interface{}) *Patches {
 }
 
 type For struct {
-	keyOrder []string
+	// keyOrder []string
 
 	Statics      []string            `json:"s"`
 	ManyDynamics map[string]Dynamics `json:"ds"`
-	DiffStrategy `json:"strategy"`
+	// DiffStrategy `json:"strategy"`
 }
 
+// for some reason the elements are already rendered in the right order... so this is not needed, it seems
 // DiffStrategy is the strategy used for when a new node is pushed (i.e. the key of that node was unknown to the client)
 // The problem this (for now) solves is, that when a new node is pushed, the client does not know to which position in the
 // array this node belongs.
 // DiffStrategy allows for assumptions about that.
-type DiffStrategy uint8
+// type DiffStrategy uint8
 
-// the order here is reflected in types.js
-const (
-	// When a new node is pushed, display it after all other nodes (as the last element)
-	Append DiffStrategy = iota
+// // the order here is reflected in types.js
+// const (
+// 	// When a new node is pushed, display it after all other nodes (as the last element)
+// 	Append DiffStrategy = iota
 
-	// ... display it before all other nodes (as the first element)
-	Prepend
+// 	// ... display it before all other nodes (as the first element)
+// 	Prepend
 
-	// ... also diff&patch the keyOrder, making sure everything is displayed in the proper order (as it was pushed into ManyDynamics)
-	Intuitiv
-)
+// 	// ... also diff&patch the keyOrder, making sure everything is displayed in the proper order (as it was pushed into ManyDynamics)
+// 	Intuitiv
+// )
 
 func (old For) Diff(new_ interface{}) *Patches {
 	new := new_.(For)
