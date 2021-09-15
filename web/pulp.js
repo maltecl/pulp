@@ -77,34 +77,39 @@ const morphdomHooks = (socket, handlers) => ({
 
 class PulpSocket {
 
-    constructor(mountID, { events, debug } = { events: [], debug: false }, ) {
+    constructor(mountID, wsPath, { events, debug } = { events: [], debug: false }, ) {
 
         // const basePath = new URL(document.location.href).pathname
 
         let cachedSD = {}; // TODO: make this better somehow. it works for now 
         let cachedAssets = null
-        let ws = null;
         let hasMounted = false
 
 
 
         mount = document.getElementById(mountID)
 
-        ws = new WebSocket("ws://" + document.location.host + "/ws")
+
+        if (wsPath.startsWith("//")) {
+            console.log("PulpSocket: malformed websocket path")
+        }
+
+        this.ws = new WebSocket(new URL(wsPath, "ws://" + document.location.host).href)
+
 
         Object.assign(globalThis, { PulpSocket: this })
 
 
-        const hooks = morphdomHooks({ ws }, [...Object.values(defaultTags), ...events])
+        const hooks = morphdomHooks({ ws: this.ws }, [...Object.values(defaultTags), ...events])
 
 
-        ws.onopen = (it) => {
+        this.ws.onopen = (it) => {
             if (debug) {
                 console.log(`socket for ${mountID} connected: `, it)
             }
         }
 
-        ws.onmessage = ({ data }) => {
+        this.ws.onmessage = ({ data }) => {
             data.text()
                 // .then(x => JSON.parse(x))
                 .then(message => {
@@ -171,8 +176,7 @@ class PulpSocket {
 
 
 
-        console.log("RMAKRER")
-            // window.onpopstate = Routing.windowRouteChangedHandler({ ws })
+        // window.onpopstate = Routing.windowRouteChangedHandler({ ws })
     }
 }
 
