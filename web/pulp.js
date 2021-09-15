@@ -79,15 +79,13 @@ class PulpSocket {
 
     constructor(mountID, wsPath, { events, debug } = { events: [], debug: false }, ) {
 
-        // const basePath = new URL(document.location.href).pathname
 
-        let cachedSD = {}; // TODO: make this better somehow. it works for now 
+        let cachedSD = null;
         let cachedAssets = null
-        let hasMounted = false
 
 
 
-        mount = document.getElementById(mountID)
+        const mount = document.getElementById(mountID)
 
 
         if (wsPath.startsWith("//")) {
@@ -111,12 +109,13 @@ class PulpSocket {
 
         this.ws.onmessage = ({ data }) => {
             data.text()
-                // .then(x => JSON.parse(x))
-                .then(message => {
+                .then(x => JSON.parse(x))
+                .then(messageJSON => {
 
-                    Object.assign(globalThis, { lastMessage: message })
+                    if (debug) {
+                        console.log("got patch: ", messageJSON)
+                    }
 
-                    const messageJSON = JSON.parse(message)
                     if (messageJSON.assets !== undefined) {
                         const { assets } = messageJSON
                         console.log(assets)
@@ -134,41 +133,18 @@ class PulpSocket {
                     }
 
 
-                    if (messageJSON.html === undefined) {
-                        return
+                    if (messageJSON.html !== undefined) {
+                        if (cachedSD === null) { // has not mounted yet => no patching
+                            cachedSD = new SD(messageJSON.html)
+                        } else {
+                            const patches = messageJSON.html
+                            cachedSD = cachedSD.patch(patches)
+                        }
                     }
-
-                    if (!hasMounted) {
-                        cachedSD = new SD(messageJSON.html)
-                        console.log(cachedSD)
-                        Object.assign(globalThis, { cachedSD })
-
-
-                        const temp = document.createElement("div")
-                        temp.id = mountID
-                        temp.innerHTML = cachedSD.render()
-                        morphdom(mount, temp, hooks)
-
-                        hasMounted = true
-                        return
-                    }
-
-                    if (debug) {
-                        console.log("got patch: ", message)
-                    }
-
-                    const patches = messageJSON.html
-
-                    cachedSD = cachedSD.patch(patches)
-
-
-                    Object.assign(globalThis, { cachedSD })
 
                     const temp = document.createElement("div")
                     temp.id = mountID
-                    const lastRender = cachedSD.render()
-                    Object.assign(globalThis, { lastRender })
-                    temp.innerHTML = lastRender
+                    temp.innerHTML = cachedSD.render()
                     morphdom(mount, temp, hooks)
 
                 }).catch(console.error)
