@@ -8,16 +8,58 @@ import (
 )
 
 type rootNode struct {
-	dynHTML    StaticDynamic
-	userAssets Assets
+	DynHTML    StaticDynamic `json:"html"`
+	UserAssets Assets        `json:"assets"`
 }
 
 func (r rootNode) Diff(new_ interface{}) *Patches {
 	new := new_.(rootNode)
-	return &Patches{
-		"assets": "",
-		"html":   r.dynHTML.Diff(new.dynHTML),
+
+	assetsPatches := r.UserAssets.Diff(new.UserAssets)
+	htmlPatches := r.DynHTML.Diff(new.DynHTML)
+	if assetsPatches == nil && htmlPatches == nil {
+		return nil
 	}
+
+	patches := Patches{}
+	if assetsPatches != nil {
+		patches["assets"] = assetsPatches
+	}
+
+	if htmlPatches != nil {
+		patches["html"] = htmlPatches
+	}
+
+	return &patches
+}
+
+func (old Assets) Diff(new_ interface{}) *Patches {
+	new := new_.(Assets)
+
+	patches := Patches{}
+
+	for key, val := range new {
+		if oldValue, isOld := old[key]; isOld {
+			if oldValue != val {
+				patches[key] = val
+			}
+		} else {
+			patches[key] = val // new value, push the whole state
+		}
+	}
+
+	for key := range old {
+		if _, ok := new[key]; !ok {
+			patches[key] = nil // deleted value, push nil
+			fmt.Println("DIFF: NIL")
+		}
+	}
+
+	if patches.IsEmpty() {
+		return nil
+	}
+
+	return &patches
 }
 
 type StaticDynamic struct {

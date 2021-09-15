@@ -2,6 +2,10 @@ const morphdom = require("morphdom")
 const { defaultTags, ...otherTags } = require("./tags")
 const { SD, FOR } = require("./types")
 
+const { Assets } = require("./assets")
+
+
+const { Routing } = require("./routing")
 
 const morphdomHooks = (socket, handlers) => ({
     getNodeKey: function(node) {
@@ -75,7 +79,10 @@ class PulpSocket {
 
     constructor(mountID, { events, debug } = { events: [], debug: false }, ) {
 
+        // const basePath = new URL(document.location.href).pathname
+
         let cachedSD = {}; // TODO: make this better somehow. it works for now 
+        let cachedAssets = null
         let ws = null;
         let hasMounted = false
 
@@ -108,14 +115,26 @@ class PulpSocket {
                     if (messageJSON.assets !== undefined) {
                         const { assets } = messageJSON
                         console.log(assets)
-                        if (this.onassets !== undefined) {
-                            this.onassets(assets)
+                        if (cachedAssets == null) {
+                            cachedAssets = new Assets(assets)
+                        } else {
+                            cachedAssets = cachedAssets.patch(assets)
                         }
+
+                        Object.assign(globalThis, { cachedAssets })
+
+                        if (this.onassets !== undefined) {
+                            this.onassets(cachedAssets.cache)
+                        }
+                    }
+
+
+                    if (messageJSON.html === undefined) {
                         return
                     }
 
                     if (!hasMounted) {
-                        cachedSD = new SD(JSON.parse(message))
+                        cachedSD = new SD(messageJSON.html)
                         console.log(cachedSD)
                         Object.assign(globalThis, { cachedSD })
 
@@ -133,7 +152,7 @@ class PulpSocket {
                         console.log("got patch: ", message)
                     }
 
-                    const patches = JSON.parse(message)
+                    const patches = messageJSON.html
 
                     cachedSD = cachedSD.patch(patches)
 
@@ -150,6 +169,10 @@ class PulpSocket {
                 }).catch(console.error)
         }
 
+
+
+        console.log("RMAKRER")
+            // window.onpopstate = Routing.windowRouteChangedHandler({ ws })
     }
 }
 

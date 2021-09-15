@@ -19,7 +19,7 @@ func init() {
 
 type LiveComponent interface {
 	Mount(Socket)
-	Render() HTML // HTML guranteed to be StaticDynamic after code generation
+	Render(Socket) (HTML, Assets) // HTML guranteed to be StaticDynamic after code generation
 	HandleEvent(Event, Socket)
 	Name() string
 }
@@ -37,6 +37,7 @@ type Event struct {
 }
 
 type routeChangedEvent struct {
+	from, to string
 }
 
 func (Event) event()             {}
@@ -44,9 +45,16 @@ func (routeChangedEvent) event() {}
 
 var socketID = uint32(0)
 
-func New(ctx context.Context, component LiveComponent, events chan event) (*StaticDynamic, <-chan Patches, <-chan error) {
+func New(ctx context.Context, component LiveComponent, events chan event, route string) (rootNode, <-chan Patches, <-chan error) {
 
-	socket := Socket{Context: ctx, updates: make(chan LiveComponent, 10), events: events, ID: socketID}
+	// TODO: @router get route from initial HTTP request
+	socket := Socket{
+		Context: ctx,
+		updates: make(chan LiveComponent, 10),
+		events:  events,
+		ID:      socketID,
+		Route:   route,
+	}
 	fmt.Printf("new socket: %d\n", socketID)
 
 	atomic.AddUint32(&socketID, 1)
@@ -56,8 +64,10 @@ func New(ctx context.Context, component LiveComponent, events chan event) (*Stat
 
 	component.Mount(socket)
 
-	initialRender := component.Render().(StaticDynamic)
-	lastRender := initialRender
+	initalTemplate, initialUserAssets := component.Render(socket)
+	lastTemplate := initalTemplate.(StaticDynamic)
+
+	lastRender := rootNode{DynHTML: lastTemplate, UserAssets: initialUserAssets}
 	// onMount is closed
 
 	go func() {
@@ -94,8 +104,9 @@ func New(ctx context.Context, component LiveComponent, events chan event) (*Stat
 			}
 
 			fmt.Printf("socket %d render\n", socket.ID)
-			newRender := component.Render().(StaticDynamic)
-			patches := lastRender.Dynamic.Diff(newRender.Dynamic)
+			newTemplate, newAssets := component.Render(socket)
+			newRender := rootNode{DynHTML: newTemplate.(StaticDynamic), UserAssets: newAssets}
+			patches := lastRender.Diff(newRender)
 			if patches == nil {
 				continue
 			}
@@ -116,7 +127,7 @@ func New(ctx context.Context, component LiveComponent, events chan event) (*Stat
 		close(socket.updates)
 	}()
 
-	return &initialRender, patchesStream, errors
+	return lastRender, patchesStream, errors
 }
 
 type HTML interface{ HTML() }
@@ -173,7 +184,8 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 		errGroup, ctx := errgroup.WithContext(context.Background())
 
 		component := newComponent()
-		initialRender, patchesStream, componentErrors := New(ctx, component, events)
+		route := r.URL.RawFragment
+		initialRender, patchesStream, componentErrors := New(ctx, component, events, route)
 
 		// send mount message
 
@@ -182,7 +194,7 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 			return nil
 		})
 
-		payload, err := json.Marshal(*initialRender)
+		payload, err := json.Marshal(initialRender)
 		if err != nil {
 			rw.WriteHeader(http.StatusBadRequest)
 			return
@@ -230,6 +242,11 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 				if err != nil {
 					return err
 				}
+
+				// event := routeChangedEvent{
+				// 	from: msg["from"],
+				// 	to:   msg["to"],
+				// }
 
 				// TODO: distinguish normal event message from route-changed message
 

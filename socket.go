@@ -18,11 +18,13 @@ type Socket struct {
 	once sync.Once
 
 	assets struct {
-		currentRoute string
-		flash        struct {
+		// currentRoute string
+		flash struct {
 			err, warning, info *string
 		}
 	}
+
+	Route string
 
 	userAssets Assets
 }
