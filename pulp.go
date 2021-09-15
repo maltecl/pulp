@@ -17,8 +17,6 @@ func init() {
 	fmt.Println("MARKER1")
 }
 
-type Assets interface{}
-
 type LiveComponent interface {
 	Mount(Socket)
 	Render() HTML // HTML guranteed to be StaticDynamic after code generation
@@ -30,14 +28,23 @@ type UnMountable interface {
 	UnMount()
 }
 
+type event interface {
+	event()
+}
 type Event struct {
 	Name string
 	Data map[string]interface{}
 }
 
+type routeChangedEvent struct {
+}
+
+func (Event) event()             {}
+func (routeChangedEvent) event() {}
+
 var socketID = uint32(0)
 
-func New(ctx context.Context, component LiveComponent, events chan Event) (*StaticDynamic, <-chan Patches, <-chan error) {
+func New(ctx context.Context, component LiveComponent, events chan event) (*StaticDynamic, <-chan Patches, <-chan error) {
 
 	socket := Socket{Context: ctx, updates: make(chan LiveComponent, 10), events: events, ID: socketID}
 	fmt.Printf("new socket: %d\n", socketID)
@@ -66,7 +73,13 @@ func New(ctx context.Context, component LiveComponent, events chan Event) (*Stat
 			case <-ctx.Done():
 				return
 			case event := <-events:
-				component.HandleEvent(event, socket)
+				if userEvent, ok := event.(Event); ok {
+					component.HandleEvent(userEvent, socket)
+				}
+
+				if routeEvent, ok := event.(routeChangedEvent); ok {
+					fmt.Println("new route ", routeEvent) // TODO @router
+				}
 				continue outer
 			case newState, ok := <-socket.updates:
 				if !ok {
@@ -155,7 +168,7 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 			return
 		}
 
-		events := make(chan Event, 1024)
+		events := make(chan event, 1024)
 
 		errGroup, ctx := errgroup.WithContext(context.Background())
 
@@ -217,6 +230,8 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 				if err != nil {
 					return err
 				}
+
+				// TODO: distinguish normal event message from route-changed message
 
 				t := msg["name"].(string)
 				delete(msg, "name")

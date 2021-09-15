@@ -13,14 +13,21 @@ type Socket struct {
 	lastState LiveComponent
 	Err       error
 	context.Context
-	events chan<- Event
+	events chan<- event
 
 	once sync.Once
 
-	flash struct {
-		err, warning, info *string
+	assets struct {
+		currentRoute string
+		flash        struct {
+			err, warning, info *string
+		}
 	}
+
+	userAssets Assets
 }
+
+type Assets map[string]interface{}
 
 type M map[string]interface{}
 

@@ -7,6 +7,19 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+type rootNode struct {
+	dynHTML    StaticDynamic
+	userAssets Assets
+}
+
+func (r rootNode) Diff(new_ interface{}) *Patches {
+	new := new_.(rootNode)
+	return &Patches{
+		"assets": "",
+		"html":   r.dynHTML.Diff(new.dynHTML),
+	}
+}
+
 type StaticDynamic struct {
 	Static  []string `json:"s"`
 	Dynamic Dynamics `json:"d"`
