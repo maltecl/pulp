@@ -26,49 +26,6 @@ func Comparable(sd1, sd2 StaticDynamic) bool {
 	return len(sd1.Dynamic) == len(sd2.Dynamic) && len(sd1.Static) == len(sd2.Static)
 }
 
-// TODO: use this for the initial render over HTTP
-func (s StaticDynamic) Render() string {
-	res := strings.Builder{}
-
-	for i := range s.Static {
-		res.WriteString(s.Static[i])
-
-		if ok := i < len(s.Dynamic); ok {
-
-			switch r := s.Dynamic[i].(type) { // TODO: remove this switch and instead check if the type implements RenderDiff and use that Render method if this is the case
-
-			case For:
-				res.WriteString(r.Render())
-
-			// case IfTemplate:
-			// 	ifStr := ""
-
-			// 	if *r.Condition {
-			// 		ifStr = r.True.Render()
-			// 	} else {
-			// 		ifStr = r.False.Render()
-			// 	}
-			// 	res.WriteString(ifStr)
-
-			// case ForTemplate:
-			// 	notreached()
-
-			// 	forStr := strings.Builder{}
-
-			// 	for _, dynamic := range r.Dynamics {
-			// 		fmt.Fprint(&forStr, StaticDynamic{Static: r.Static, Dynamic: dynamic}.Render())
-			// 	}
-
-			// 	res.WriteString(forStr.String())
-			default:
-				res.WriteString(fmt.Sprint(s.Dynamic[i]))
-			}
-		}
-	}
-
-	return res.String()
-}
-
 func notreached() {
 	panic("should not be reached")
 }
@@ -81,32 +38,23 @@ func (p Patches) IsEmpty() bool {
 }
 
 type Diffable interface {
-	Diff(new interface{}) *Patches
-}
-
-type Renderable interface {
-	Render() string
-}
-
-type RenderDiff interface {
-	Diffable
-	Renderable
+	Diff(new_ interface{}) *Patches
 }
 
 // TODO: not quite working yet
-func (sd StaticDynamic) Diff(new interface{}) *Patches {
-	new_ := new.(StaticDynamic)
+func (sd StaticDynamic) Diff(new_ interface{}) *Patches {
+	new := new_.(StaticDynamic)
 
-	return sd.Dynamic.Diff(new_.Dynamic)
+	return sd.Dynamic.Diff(new.Dynamic)
 }
 
 // Dynamics can be filled by actual values or itself by other Diffables
 type Dynamics []interface{}
 
-func (d Dynamics) Diff(new interface{}) *Patches {
-	new_ := new.(Dynamics)
+func (d Dynamics) Diff(new_ interface{}) *Patches {
+	new := new_.(Dynamics)
 
-	if len(d) != len(new_) {
+	if len(d) != len(new) {
 		panic(fmt.Errorf("expected equal length in Dynamics"))
 	}
 
@@ -122,12 +70,12 @@ func (d Dynamics) Diff(new interface{}) *Patches {
 		}
 
 		if d1Diffable, isDiffable := d[i].(Diffable); isDiffable {
-			if diff := d1Diffable.Diff(new_[i]); diff != nil {
+			if diff := d1Diffable.Diff(new[i]); diff != nil {
 				ret[key] = diff
 			}
 		} else {
-			if !cmp.Equal(d[i], new_[i]) {
-				ret[key] = new_[i]
+			if !cmp.Equal(d[i], new[i]) {
+				ret[key] = new[i]
 			}
 		}
 	}
@@ -147,21 +95,21 @@ type If struct {
 	False     StaticDynamic `json:"f"`
 }
 
-func (old If) Diff(new interface{}) *Patches {
-	new_ := new.(If)
+func (old If) Diff(new_ interface{}) *Patches {
+	new := new_.(If)
 
 	patches := Patches{}
 
-	if old.Condition != new_.Condition {
-		patches["c"] = new_.Condition
+	if old.Condition != new.Condition {
+		patches["c"] = new.Condition
 	}
 
-	// if new_.Condition {
-	if trueDiff := old.True.Dynamic.Diff(new_.True.Dynamic); trueDiff != nil {
+	// if new.Condition {
+	if trueDiff := old.True.Dynamic.Diff(new.True.Dynamic); trueDiff != nil {
 		patches["t"] = trueDiff
 	}
 	// } else {
-	if falseDiff := old.False.Dynamic.Diff(new_.False.Dynamic); falseDiff != nil {
+	if falseDiff := old.False.Dynamic.Diff(new.False.Dynamic); falseDiff != nil {
 		patches["f"] = falseDiff
 	}
 	// }
@@ -173,37 +121,38 @@ func (old If) Diff(new interface{}) *Patches {
 	return &patches
 }
 
-var _ RenderDiff = For{}
-
 type For struct {
+	keyOrder []string
+
 	Statics      []string            `json:"s"`
 	ManyDynamics map[string]Dynamics `json:"ds"`
 	DiffStrategy `json:"strategy"`
 }
 
+// DiffStrategy is the strategy used for when a new node is pushed (i.e. the key of that node was unknown to the client)
+// The problem this (for now) solves is, that when a new node is pushed, the client does not know to which position in the
+// array this node belongs.
+// DiffStrategy allows for assumptions about that.
 type DiffStrategy uint8
 
+// the order here is reflected in types.js
 const (
+	// When a new node is pushed, display it after all other nodes (as the last element)
 	Append DiffStrategy = iota
+
+	// ... display it before all other nodes (as the first element)
 	Prepend
+
+	// ... also diff&patch the keyOrder, making sure everything is displayed in the proper order (as it was pushed into ManyDynamics)
+	Intuitiv
 )
 
-func (f For) Render() string {
-	str := strings.Builder{}
-
-	for _, dynamics := range f.ManyDynamics {
-		str.WriteString(StaticDynamic{f.Statics, dynamics}.Render())
-	}
-
-	return str.String()
-}
-
-func (old For) Diff(new interface{}) *Patches {
-	new_ := new.(For)
+func (old For) Diff(new_ interface{}) *Patches {
+	new := new_.(For)
 
 	patches := Patches{}
 
-	for key, val := range new_.ManyDynamics {
+	for key, val := range new.ManyDynamics {
 		if oldVal, ok := old.ManyDynamics[key]; ok {
 			if diff := oldVal.Diff(val); diff != nil {
 				patches[key] = diff // old value, push the diff
@@ -214,7 +163,7 @@ func (old For) Diff(new interface{}) *Patches {
 	}
 
 	for key := range old.ManyDynamics {
-		if _, ok := new_.ManyDynamics[key]; !ok {
+		if _, ok := new.ManyDynamics[key]; !ok {
 			patches[key] = nil // deleted value, push nil
 			fmt.Println("DIFF: NIL")
 		}

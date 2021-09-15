@@ -7,8 +7,6 @@
 const inputTag = {
     description: "in a text-input, whenever _any_ text is entered, fire off an event, including the standard HTML-value attributes value",
     applyWhen(node) {
-        console.log("applying inputTag: ", ["HTMLInputElement", "HTMLTextAreaElement"].includes(node.constructor.name))
-
         return ["HTMLInputElement", "HTMLTextAreaElement"].includes(node.constructor.name)
     },
     on: "input",
@@ -27,7 +25,7 @@ const clickTag = {
     on: "click",
     tag: "click",
     handler(e, name) {
-        return { name, marker: "dummy marker" }
+        return { name }
     },
 }
 
@@ -39,7 +37,8 @@ const keySubmitTag = {
     on: "keydown", // uses the "keydonw" HTML Event
     tag: "key-submit", // is tagged with "key-submit". in the source code it looks like this: ":key-submit=<name>"
     handler(e, name) {
-        if (e.keyCode !== 13) {
+        const enterKeyCode = 13
+        if (e.keyCode !== enterKeyCode) {
             return null // reject the event. Payload is not sent
         }
         e.preventDefault()

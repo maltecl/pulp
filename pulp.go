@@ -143,12 +143,8 @@ func LiveHandler(route string, newComponent func() LiveComponent) {
 	http.HandleFunc(filepath.Join(route, "/ws"), handler(newComponent))
 }
 
-var i = 0
-
 func handler(newComponent func() LiveComponent) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		id := i
-		i++
 
 		upgrader := websocket.Upgrader{}
 
@@ -232,15 +228,6 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 				}
 			}
 		})
-
-		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					fmt.Printf("outer socket panic: %d\n", id)
-				}
-			}()
-
-		}()
 
 		if err := errGroup.Wait(); err != nil {
 			log.Println("errGroup.Error: ", err)

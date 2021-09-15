@@ -11,6 +11,7 @@ const morphdomHooks = (socket, handlers) => ({
         return node;
     },
     onNodeAdded: function(node) {
+
         for (const { applyWhen, on, tag, handler }
             of handlers) {
 
@@ -34,10 +35,18 @@ const morphdomHooks = (socket, handlers) => ({
                     return
                 }
 
-                const values = node.getAttribute(":values")
-                if (values !== null && values.trim() !== "") {
-                    payload = {...payload, value: values }
+
+                for (const attribute of node.attributes) {
+                    if (attribute.name.startsWith(":value-")) {
+                        const key = attribute.name.slice(":value-".length)
+                        payload = {...payload, [key]: attribute.value.trim() }
+                    }
                 }
+
+                // const values = node.getAttribute(":values")
+                // if (values !== null && values.trim() !== "") {
+                //     payload = {...payload, values: values }
+                // }
 
                 socket.ws.send(JSON.stringify(payload, null, 0))
             })
@@ -81,12 +90,29 @@ class PulpSocket {
 
         const hooks = morphdomHooks({ ws }, [...Object.values(defaultTags), ...events])
 
+
+        ws.onopen = (it) => {
+            if (debug) {
+                console.log(`socket for ${mountID} connected: `, it)
+            }
+        }
+
         ws.onmessage = ({ data }) => {
             data.text()
+                // .then(x => JSON.parse(x))
                 .then(message => {
 
                     Object.assign(globalThis, { lastMessage: message })
 
+                    const messageJSON = JSON.parse(message)
+                    if (messageJSON.assets !== undefined) {
+                        const { assets } = messageJSON
+                        console.log(assets)
+                        if (this.onassets !== undefined) {
+                            this.onassets(assets)
+                        }
+                        return
+                    }
 
                     if (!hasMounted) {
                         cachedSD = new SD(JSON.parse(message))
