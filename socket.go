@@ -9,7 +9,7 @@ import (
 type Socket struct {
 	ID uint32
 
-	updates   chan LiveComponent
+	updates   chan socketUpdates
 	lastState LiveComponent
 	Err       error
 	context.Context
@@ -17,19 +17,30 @@ type Socket struct {
 
 	once sync.Once
 
-	assets struct {
-		// currentRoute string
-		flash struct {
-			err, warning, info *string
-		}
-	}
+	// assets struct {
+	// 	// currentRoute string
+	// 	flash struct {
+	// 		err, warning, info *string
+	// 	}
+	// }
 
 	Route string
+}
 
-	userAssets Assets
+type socketUpdates struct {
+	component    LiveComponent
+	socketAssets Assets
+	route        string // eh. not sure if this will stay
 }
 
 type Assets map[string]interface{}
+
+func (a Assets) mergeAndOverwrite(other Assets) Assets {
+	for key, val := range other {
+		a[key] = val
+	}
+	return a
+}
 
 type M map[string]interface{}
 
@@ -60,11 +71,18 @@ func (s *Socket) FlashInfo(route string) {
 func (s *Socket) FlashWarning(route string) {
 }
 
-func (s *Socket) Redirect(route string) {
-
+func (s *Socket) Redirect(route string) *Socket {
+	s.Route = route
+	return s
 }
 
-func (s Socket) Do() {
+func (s Socket) assets() Assets {
+	return Assets{
+		"route": s.Route,
+	}
+}
+
+func (s *Socket) Do() {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -75,7 +93,7 @@ func (s Socket) Do() {
 		select {
 		case <-s.Context.Done():
 			fmt.Println("socket done: ", s.ID)
-		case s.updates <- s.lastState:
+		case s.updates <- socketUpdates{component: s.lastState, socketAssets: s.assets(), route: s.Route}:
 		}
 	}()
 }
