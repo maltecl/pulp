@@ -13,10 +13,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func init() {
-	fmt.Println("MARKER1")
-}
-
 type LiveComponent interface {
 	Mount(Socket)
 	Render(Socket) (HTML, Assets) // HTML guranteed to be StaticDynamic after code generation
@@ -28,24 +24,24 @@ type UnMountable interface {
 	UnMount()
 }
 
-type event interface {
+type Event interface {
 	event()
 }
-type Event struct {
+type UserEvent struct {
 	Name string
 	Data map[string]interface{}
 }
 
-type routeChangedEvent struct {
-	from, to string
+type RouteChangedEvent struct {
+	From, To string
 }
 
-func (Event) event()             {}
-func (routeChangedEvent) event() {}
+func (UserEvent) event()         {}
+func (RouteChangedEvent) event() {}
 
 var socketID = uint32(0)
 
-func New(ctx context.Context, component LiveComponent, events chan event, route string) (rootNode, <-chan Patches, <-chan error) {
+func newPatchesStream(ctx context.Context, component LiveComponent, events chan Event, route string) (rootNode, <-chan Patches, <-chan error) {
 
 	// TODO: @router get route from initial HTTP request
 	socket := Socket{
@@ -73,11 +69,11 @@ func New(ctx context.Context, component LiveComponent, events chan event, route 
 	// onMount is closed
 
 	go func() {
-		<-socket.Done()
-		fmt.Printf("socket done %d\n", socket.ID)
-	}()
-
-	go func() {
+		defer func() {
+			close(errors)
+			close(patchesStream)
+			close(socket.updates)
+		}()
 
 	outer:
 		for {
@@ -85,15 +81,16 @@ func New(ctx context.Context, component LiveComponent, events chan event, route 
 			case <-ctx.Done():
 				return
 			case event := <-events:
-				if userEvent, ok := event.(Event); ok {
+				if userEvent, ok := event.(UserEvent); ok {
 					fmt.Println("event: ", userEvent.Name)
 					socket.lastState.HandleEvent(userEvent, socket)
+					continue outer
 				}
 
-				if routeEvent, ok := event.(routeChangedEvent); ok {
-					fmt.Println("new route ", routeEvent) // TODO @router
+				if routeEvent, ok := event.(RouteChangedEvent); ok {
+					socket.lastState.HandleEvent(routeEvent, socket)
+					socket.Prepare().Redirect(routeEvent.To).Do()
 				}
-				continue outer
 			case update, ok := <-socket.updates:
 				if !ok {
 					return
@@ -122,13 +119,6 @@ func New(ctx context.Context, component LiveComponent, events chan event, route 
 			case patchesStream <- *patches:
 			}
 		}
-	}()
-
-	go func() {
-		<-socket.Done()
-		close(errors)
-		close(patchesStream)
-		close(socket.updates)
 	}()
 
 	return lastRender, patchesStream, errors
@@ -183,13 +173,13 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 			return
 		}
 
-		events := make(chan event, 1024)
+		events := make(chan Event, 1024)
 
 		errGroup, ctx := errgroup.WithContext(context.Background())
 
 		component := newComponent()
 		route := r.URL.RawFragment
-		initialRender, patchesStream, componentErrors := New(ctx, component, events, route)
+		initialRender, patchesStream, componentErrors := newPatchesStream(ctx, component, events, route)
 
 		// send mount message
 
@@ -247,20 +237,26 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 					return err
 				}
 
-				// event := routeChangedEvent{
-				// 	from: msg["from"],
-				// 	to:   msg["to"],
-				// }
+				var e Event
 
-				// TODO: distinguish normal event message from route-changed message
-
-				t := msg["name"].(string)
-				delete(msg, "name")
+				if _, ok := msg["to"]; ok { // got redirect event
+					e = RouteChangedEvent{
+						From: msg["from"].(string),
+						To:   msg["to"].(string),
+					}
+				} else {
+					t, ok := msg["name"].(string)
+					if !ok {
+						log.Println("expected name in event: ", msg)
+					}
+					delete(msg, "name")
+					e = UserEvent{Name: t, Data: msg}
+				}
 
 				select {
 				case <-ctx.Done():
 					return ctx.Err()
-				case events <- Event{Name: t, Data: msg}:
+				case events <- e:
 				}
 			}
 		})
@@ -268,7 +264,6 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 		if err := errGroup.Wait(); err != nil {
 			log.Println("errGroup.Error: ", err)
 		}
-		// canc()
 		log.Println("done with: ", err)
 
 		if unmountable, ok := component.(UnMountable); ok {

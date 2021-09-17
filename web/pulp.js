@@ -5,7 +5,6 @@ const { SD, FOR } = require("./types")
 const { Assets } = require("./assets")
 
 
-const { Routing } = require("./routing")
 
 const morphdomHooks = (socket, handlers) => ({
     getNodeKey: function(node) {
@@ -78,6 +77,7 @@ const morphdomHooks = (socket, handlers) => ({
 class PulpSocket {
 
     constructor(mountID, wsPath, { events, debug } = { events: [], debug: false }, ) {
+        this.lastRoute = null
 
 
         let cachedSD = null;
@@ -88,8 +88,8 @@ class PulpSocket {
         const mount = document.getElementById(mountID)
 
 
-        if (wsPath.startsWith("//")) {
-            console.log("PulpSocket: malformed websocket path")
+        if (!wsPath.startsWith("/")) {
+            wsPath = "/" + wsPath
         }
 
         this.ws = new WebSocket(new URL(wsPath, "ws://" + document.location.host).href)
@@ -127,6 +127,11 @@ class PulpSocket {
 
                         Object.assign(globalThis, { cachedAssets })
 
+                        const { route } = assets
+                        history.pushState({}, null, route)
+                        this.lastRoute = route
+
+
                         if (this.onassets !== undefined) {
                             this.onassets(cachedAssets.cache)
                         }
@@ -151,8 +156,11 @@ class PulpSocket {
         }
 
 
-
-        // window.onpopstate = Routing.windowRouteChangedHandler({ ws })
+        const self = this
+        window.addEventListener("popstate", (e) => {
+            console.log("pop: ", e)
+            self.ws.send(JSON.stringify({ from: this.lastRoute === null ? "" : this.lastRoute, to: new URL(document.location.href).pathname }, null, 0))
+        })
     }
 }
 

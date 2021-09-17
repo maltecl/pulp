@@ -13,7 +13,7 @@ type Socket struct {
 	lastState LiveComponent
 	Err       error
 	context.Context
-	events chan<- event
+	events chan<- Event
 
 	once sync.Once
 
@@ -49,7 +49,7 @@ type M map[string]interface{}
 func (s *Socket) Dispatch(event string, data M) {
 	select {
 	case <-s.Done():
-	case s.events <- Event{Name: event, Data: data}:
+	case s.events <- UserEvent{Name: event, Data: data}:
 	}
 }
 
