@@ -50,7 +50,7 @@ func New(ctx context.Context, component LiveComponent, events chan event, route 
 	// TODO: @router get route from initial HTTP request
 	socket := Socket{
 		Context:   ctx,
-		updates:   make(chan socketUpdates, 10),
+		updates:   make(chan socketUpdate, 10),
 		events:    events,
 		ID:        socketID,
 		Route:     route,
@@ -64,9 +64,9 @@ func New(ctx context.Context, component LiveComponent, events chan event, route 
 	errors := make(chan error)
 	patchesStream := make(chan Patches)
 
-	component.Mount(socket)
+	socket.lastState.Mount(socket)
 
-	initalTemplate, initialUserAssets := component.Render(socket)
+	initalTemplate, initialUserAssets := socket.lastState.Render(socket)
 	lastTemplate := initalTemplate.(StaticDynamic)
 
 	lastRender := rootNode{DynHTML: lastTemplate, UserAssets: initialUserAssets.mergeAndOverwrite(socket.assets())}
@@ -79,8 +79,6 @@ func New(ctx context.Context, component LiveComponent, events chan event, route 
 
 	go func() {
 
-		var socketAssets Assets
-
 	outer:
 		for {
 			select {
@@ -89,7 +87,7 @@ func New(ctx context.Context, component LiveComponent, events chan event, route 
 			case event := <-events:
 				if userEvent, ok := event.(Event); ok {
 					fmt.Println("event: ", userEvent.Name)
-					component.HandleEvent(userEvent, socket)
+					socket.lastState.HandleEvent(userEvent, socket)
 				}
 
 				if routeEvent, ok := event.(routeChangedEvent); ok {
@@ -105,14 +103,12 @@ func New(ctx context.Context, component LiveComponent, events chan event, route 
 					return
 				}
 
-				component = update.component
-				socketAssets = update.socketAssets
-				socket.Route = update.route
+				update.apply(&socket)
 			}
 
 			fmt.Printf("socket %d render\n", socket.ID)
-			newTemplate, newAssets := component.Render(socket)
-			newRender := rootNode{DynHTML: newTemplate.(StaticDynamic), UserAssets: newAssets.mergeAndOverwrite(socketAssets)}
+			newTemplate, newAssets := socket.lastState.Render(socket)
+			newRender := rootNode{DynHTML: newTemplate.(StaticDynamic), UserAssets: newAssets.mergeAndOverwrite(socket.assets())}
 			patches := lastRender.Diff(newRender)
 			if patches == nil {
 				continue

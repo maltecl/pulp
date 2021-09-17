@@ -9,7 +9,7 @@ import (
 type Socket struct {
 	ID uint32
 
-	updates   chan socketUpdates
+	updates   chan socketUpdate
 	lastState LiveComponent
 	Err       error
 	context.Context
@@ -27,10 +27,11 @@ type Socket struct {
 	Route string
 }
 
-type socketUpdates struct {
-	component    LiveComponent
-	socketAssets Assets
-	route        string // eh. not sure if this will stay
+type socketUpdate struct {
+	ctx       context.Context
+	ch        chan<- socketUpdate
+	component *LiveComponent
+	route     *string // eh. not sure if this will stay
 }
 
 type Assets map[string]interface{}
@@ -57,10 +58,10 @@ func (s *Socket) Errorf(format string, values ...interface{}) *Socket {
 	return s
 }
 
-func (s *Socket) Changes(state LiveComponent) *Socket {
-	s.lastState = state
-	return s
-}
+// func (s *Socket) Changes(state LiveComponent) *Socket {
+// 	s.lastState = state
+// 	return s
+// }
 
 func (s *Socket) FlashError(route string) {
 }
@@ -71,10 +72,10 @@ func (s *Socket) FlashInfo(route string) {
 func (s *Socket) FlashWarning(route string) {
 }
 
-func (s *Socket) Redirect(route string) *Socket {
-	s.Route = route
-	return s
-}
+// func (s *Socket) Redirect(route string) *Socket {
+// 	s.Route = route
+// 	return s
+// }
 
 func (s Socket) assets() Assets {
 	return Assets{
@@ -82,18 +83,41 @@ func (s Socket) assets() Assets {
 	}
 }
 
-func (s *Socket) Do() {
+func (s *Socket) Prepare() *socketUpdate {
+	return &socketUpdate{ch: s.updates, ctx: s.Context}
+}
+
+func (u socketUpdate) apply(socket *Socket) {
+	if u.route != nil {
+		socket.Route = *u.route
+	}
+
+	if u.component != nil {
+		socket.lastState = *u.component
+	}
+}
+
+func (u *socketUpdate) Redirect(route string) *socketUpdate {
+	u.route = &route
+	return u
+}
+
+func (u *socketUpdate) Changes(c LiveComponent) *socketUpdate {
+	u.component = &c
+	return u
+}
+
+func (s *socketUpdate) Do() {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				fmt.Printf("socket panic: %d\n", s.ID)
+				fmt.Printf("socket panic: \n")
 			}
 		}()
 
 		select {
-		case <-s.Context.Done():
-			fmt.Println("socket done: ", s.ID)
-		case s.updates <- socketUpdates{component: s.lastState, socketAssets: s.assets(), route: s.Route}:
+		case <-s.ctx.Done():
+		case s.ch <- *s:
 		}
 	}()
 }
