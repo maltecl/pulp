@@ -1,0 +1,12 @@
+{
+    "name": "pulp_web",
+    "version": "1.0.1",
+    "description": "",
+    "main": "pulp.js",
+    "scripts": {},
+    "author": "malte.l",
+    "license": "ISC",
+    "dependencies": {
+        "morphdom": "2.6.1"
+    }
+}

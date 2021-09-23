@@ -1,150 +1,141 @@
 package pulp
 
-import (
-	"fmt"
-	"strings"
-	"testing"
+// func equal(a, b []int) bool {
+// 	if len(a) != len(b) {
+// 		return false
+// 	}
+// 	for i, v := range a {
+// 		if v != b[i] {
+// 			return false
+// 		}
+// 	}
+// 	return true
+// }
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/kr/pretty"
-)
+// func TestDiff(t *testing.T) {
 
-func equal(a, b []int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i, v := range a {
-		if v != b[i] {
-			return false
-		}
-	}
-	return true
-}
+// 	cases := []struct {
+// 		from, to   Diffable
+// 		patches    *Patches
+// 		exptectErr bool
+// 	}{
+// 		{
+// 			from: Dynamics{"hello"},
+// 			to:   Dynamics{"hello"},
+// 		},
+// 		{
+// 			from:    Dynamics{""},
+// 			to:      Dynamics{"hello"},
+// 			patches: &Patches{"0": "hello"},
+// 		},
+// 		{
+// 			from:       Dynamics{""},
+// 			to:         Dynamics{"hello", ""},
+// 			exptectErr: true,
+// 		},
+// 		// if
+// 		{
+// 			from: If{True: StaticDynamic{Dynamic: Dynamics{"hello"}}},
+// 			to:   If{True: StaticDynamic{Dynamic: Dynamics{"hello"}}},
+// 		},
+// 		{
+// 			from:    If{True: StaticDynamic{Dynamic: Dynamics{"hello"}}},
+// 			to:      If{Condition: true, True: StaticDynamic{Dynamic: Dynamics{"hello"}}},
+// 			patches: &Patches{"c": true},
+// 		},
+// 		{
+// 			from:    If{True: StaticDynamic{Dynamic: Dynamics{"hello"}}},
+// 			to:      If{Condition: true, True: StaticDynamic{Dynamic: Dynamics{""}}},
+// 			patches: &Patches{"c": true, "t": &Patches{"0": ""}},
+// 		},
+// 	}
 
-func TestDiff(t *testing.T) {
+// 	for i, tc := range cases {
 
-	cases := []struct {
-		from, to   Diffable
-		patches    *Patches
-		exptectErr bool
-	}{
-		{
-			from: Dynamics{"hello"},
-			to:   Dynamics{"hello"},
-		},
-		{
-			from:    Dynamics{""},
-			to:      Dynamics{"hello"},
-			patches: &Patches{"0": "hello"},
-		},
-		{
-			from:       Dynamics{""},
-			to:         Dynamics{"hello", ""},
-			exptectErr: true,
-		},
-		// if
-		{
-			from: If{True: StaticDynamic{Dynamic: Dynamics{"hello"}}},
-			to:   If{True: StaticDynamic{Dynamic: Dynamics{"hello"}}},
-		},
-		{
-			from:    If{True: StaticDynamic{Dynamic: Dynamics{"hello"}}},
-			to:      If{Condition: true, True: StaticDynamic{Dynamic: Dynamics{"hello"}}},
-			patches: &Patches{"c": true},
-		},
-		{
-			from:    If{True: StaticDynamic{Dynamic: Dynamics{"hello"}}},
-			to:      If{Condition: true, True: StaticDynamic{Dynamic: Dynamics{""}}},
-			patches: &Patches{"c": true, "t": &Patches{"0": ""}},
-		},
-	}
+// 		var (
+// 			want = tc.patches
+// 			got  *Patches
+// 			err  error
+// 		)
 
-	for i, tc := range cases {
+// 		errCatcher := func() {
+// 			if mErr, isErr := recover().(error); isErr && mErr != nil {
+// 				err = mErr
+// 			}
+// 		}
 
-		var (
-			want = tc.patches
-			got  *Patches
-			err  error
-		)
+// 		func() {
+// 			defer errCatcher()
+// 			got = tc.from.Diff(tc.to)
+// 		}()
 
-		errCatcher := func() {
-			if mErr, isErr := recover().(error); isErr && mErr != nil {
-				err = mErr
-			}
-		}
+// 		errMatches := tc.exptectErr == (err != nil)
+// 		eq := cmp.Equal(got, want)
 
-		func() {
-			defer errCatcher()
-			got = tc.from.Diff(tc.to)
-		}()
+// 		if eq && errMatches {
+// 			continue
+// 		}
 
-		errMatches := tc.exptectErr == (err != nil)
-		eq := cmp.Equal(got, want)
+// 		errStr := &strings.Builder{}
+// 		fmt.Fprintf(errStr, "test %v: ", i)
 
-		if eq && errMatches {
-			continue
-		}
+// 		if !eq {
+// 			fmt.Fprintf(errStr, "\n%v (expected) != %v,\ndiff: %s", want, got, cmp.Diff(got, want))
+// 		}
 
-		errStr := &strings.Builder{}
-		fmt.Fprintf(errStr, "test %v: ", i)
+// 		if err != nil {
+// 			fmt.Fprintf(errStr, "\ngot unexpected error: %v", err)
+// 		}
 
-		if !eq {
-			fmt.Fprintf(errStr, "\n%v (expected) != %v,\ndiff: %s", want, got, cmp.Diff(got, want))
-		}
+// 		t.Error(errStr.String())
+// 	}
 
-		if err != nil {
-			fmt.Fprintf(errStr, "\ngot unexpected error: %v", err)
-		}
+// }
 
-		t.Error(errStr.String())
-	}
+// func TestNewStaticDynamic(t *testing.T) {
 
-}
+// 	cases := []struct {
+// 		static  string
+// 		dynamic []interface{}
 
-func TestNewStaticDynamic(t *testing.T) {
+// 		expectedSD     StaticDynamic
+// 		expectedString string
+// 	}{
+// 		{
+// 			static:         "hello {}",
+// 			dynamic:        []interface{}{0},
+// 			expectedSD:     StaticDynamic{Static: []string{"hello ", ""}, Dynamic: []interface{}{0}},
+// 			expectedString: "hello 0",
+// 		},
+// 	}
 
-	cases := []struct {
-		static  string
-		dynamic []interface{}
+// 	for i, tc := range cases {
+// 		got := NewStaticDynamic(tc.static, tc.dynamic...)
+// 		eq := Comparable(got, tc.expectedSD) && cmp.Equal(got, tc.expectedSD)
+// 		eqString := cmp.Equal(tc.expectedString, got.Render())
 
-		expectedSD     StaticDynamic
-		expectedString string
-	}{
-		{
-			static:         "hello {}",
-			dynamic:        []interface{}{0},
-			expectedSD:     StaticDynamic{Static: []string{"hello ", ""}, Dynamic: []interface{}{0}},
-			expectedString: "hello 0",
-		},
-	}
+// 		if eq && eqString {
+// 			continue
+// 		}
 
-	for i, tc := range cases {
-		got := NewStaticDynamic(tc.static, tc.dynamic...)
-		eq := Comparable(got, tc.expectedSD) && cmp.Equal(got, tc.expectedSD)
-		eqString := cmp.Equal(tc.expectedString, got.Render())
+// 		errStr := &strings.Builder{}
 
-		if eq && eqString {
-			continue
-		}
+// 		fmt.Fprintf(errStr, "test %v: ", i)
 
-		errStr := &strings.Builder{}
+// 		if !eq {
+// 			fmt.Fprintf(errStr, "!eq: ")
+// 			fmt.Fprintf(errStr, "%v (expected) != %v", pretty.Sprint(tc.expectedSD), pretty.Sprint(got))
+// 			fmt.Fprintf(errStr, "\ndiff:%v", cmp.Diff(tc.expectedSD, got))
+// 		}
 
-		fmt.Fprintf(errStr, "test %v: ", i)
+// 		if !eqString {
+// 			fmt.Fprintf(errStr, "!eqString: ")
+// 			fmt.Fprintf(errStr, "%q (expected) != %q", tc.expectedString, got.Render())
+// 			fmt.Fprintf(errStr, "\ndiff:%v", cmp.Diff(tc.expectedString, got.Render()))
+// 		}
 
-		if !eq {
-			fmt.Fprintf(errStr, "!eq: ")
-			fmt.Fprintf(errStr, "%v (expected) != %v", pretty.Sprint(tc.expectedSD), pretty.Sprint(got))
-			fmt.Fprintf(errStr, "\ndiff:%v", cmp.Diff(tc.expectedSD, got))
-		}
+// 		t.Error(errStr.String())
 
-		if !eqString {
-			fmt.Fprintf(errStr, "!eqString: ")
-			fmt.Fprintf(errStr, "%q (expected) != %q", tc.expectedString, got.Render())
-			fmt.Fprintf(errStr, "\ndiff:%v", cmp.Diff(tc.expectedString, got.Render()))
-		}
+// 	}
 
-		t.Error(errStr.String())
-
-	}
-
-}
+// }

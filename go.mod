@@ -1,4 +1,4 @@
-module pulp
+module github.com/amblified/pulp
 
 go 1.16
 

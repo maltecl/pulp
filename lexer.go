@@ -65,11 +65,13 @@ func lexUntil(pattern [2]rune, tokenTyp tokenTyp, continueWith lexerFunc) lexerF
 			}
 		}
 
+		// backup the two runes of the pattern
 		l.backup()
 		l.backup()
 
 		l.emit(tokenTyp)
 
+		// skip the two runes of the patten
 		l.next()
 		l.next()
 		l.ignore()

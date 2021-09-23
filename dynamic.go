@@ -51,7 +51,6 @@ func (old Assets) Diff(new_ interface{}) *Patches {
 	for key := range old {
 		if _, ok := new[key]; !ok {
 			patches[key] = nil // deleted value, push nil
-			fmt.Println("DIFF: NIL")
 		}
 	}
 
@@ -221,7 +220,6 @@ func (old For) Diff(new_ interface{}) *Patches {
 	for key := range old.ManyDynamics {
 		if _, ok := new.ManyDynamics[key]; !ok {
 			patches[key] = nil // deleted value, push nil
-			fmt.Println("DIFF: NIL")
 		}
 	}
 

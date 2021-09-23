@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"path/filepath"
+	"os"
 	"sync/atomic"
 
 	"github.com/gorilla/websocket"
@@ -17,11 +17,10 @@ type LiveComponent interface {
 	Mount(Socket)
 	Render(Socket) (HTML, Assets) // HTML guranteed to be StaticDynamic after code generation
 	HandleEvent(Event, Socket)
-	Name() string
 }
 
-type UnMountable interface {
-	UnMount()
+type Unmountable interface {
+	Unmount()
 }
 
 type Event interface {
@@ -50,20 +49,22 @@ func newPatchesStream(ctx context.Context, component LiveComponent, events chan 
 		events:    events,
 		ID:        socketID,
 		Route:     route,
-		lastState: component,
+		component: component,
 	}
-
-	fmt.Printf("new socket: %d\n", socketID)
 
 	atomic.AddUint32(&socketID, 1)
 
 	errors := make(chan error)
 	patchesStream := make(chan Patches)
 
-	socket.lastState.Mount(socket)
+	socket.component.Mount(socket)
 
-	initalTemplate, initialUserAssets := socket.lastState.Render(socket)
-	lastTemplate := initalTemplate.(StaticDynamic)
+	initalTemplate, initialUserAssets := socket.component.Render(socket)
+	lastTemplate, ok := initalTemplate.(StaticDynamic)
+	if !ok {
+		fmt.Println("the first return value of the call to the Render() method is not of type StaticDynamic, this means that you probably did not generate your code first")
+		os.Exit(1)
+	}
 
 	lastRender := rootNode{DynHTML: lastTemplate, UserAssets: initialUserAssets.mergeAndOverwrite(socket.assets())}
 	// onMount is closed
@@ -82,29 +83,26 @@ func newPatchesStream(ctx context.Context, component LiveComponent, events chan 
 				return
 			case event := <-events:
 				if userEvent, ok := event.(UserEvent); ok {
-					fmt.Println("event: ", userEvent.Name)
-					socket.lastState.HandleEvent(userEvent, socket)
+					socket.component.HandleEvent(userEvent, socket)
 					continue outer
 				}
 
 				if routeEvent, ok := event.(RouteChangedEvent); ok {
-					socket.lastState.HandleEvent(routeEvent, socket)
-					socket.Prepare().Redirect(routeEvent.To).Do()
+					socket.component.HandleEvent(routeEvent, socket)
+					socket.Redirect(routeEvent.To)
 				}
 			case update, ok := <-socket.updates:
 				if !ok {
 					return
 				}
+				update.apply(&socket)
 				if socket.Err != nil {
 					errors <- socket.Err
 					return
 				}
-
-				update.apply(&socket)
 			}
 
-			fmt.Printf("socket %d render\n", socket.ID)
-			newTemplate, newAssets := socket.lastState.Render(socket)
+			newTemplate, newAssets := socket.component.Render(socket)
 			newRender := rootNode{DynHTML: newTemplate.(StaticDynamic), UserAssets: newAssets.mergeAndOverwrite(socket.assets())}
 			patches := lastRender.Diff(newRender)
 			if patches == nil {
@@ -124,44 +122,15 @@ func newPatchesStream(ctx context.Context, component LiveComponent, events chan 
 	return lastRender, patchesStream, errors
 }
 
-type HTML interface{ HTML() }
+type HTML interface{ html() }
 
 type L string
 
-func (L) HTML() {}
+func (L) html() {}
 
-func (StaticDynamic) HTML() {}
+func (StaticDynamic) html() {}
 
-func ServeWebFiles() {
-	http.HandleFunc("/bundle/bundle.js", func(rw http.ResponseWriter, r *http.Request) {
-		http.ServeFile(rw, r, "web/bundle/bundle.js")
-	})
-
-	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
-		http.ServeFile(rw, r, "web/index.html")
-	})
-
-	http.HandleFunc("/index.css", func(rw http.ResponseWriter, r *http.Request) {
-		http.ServeFile(rw, r, "web/index.css")
-	})
-
-}
-
-// TODO: the api needs to be improved ALOT
-func LiveHandler(route string, newComponent func() LiveComponent) {
-
-	http.HandleFunc(filepath.Join(route, "/bundle/bundle.js"), func(rw http.ResponseWriter, r *http.Request) {
-		http.ServeFile(rw, r, "web/bundle/bundle.js")
-	})
-
-	http.HandleFunc(filepath.Join(route, "/"), func(rw http.ResponseWriter, r *http.Request) {
-		http.ServeFile(rw, r, "web/index.html")
-	})
-
-	http.HandleFunc(filepath.Join(route, "/ws"), handler(newComponent))
-}
-
-func handler(newComponent func() LiveComponent) http.HandlerFunc {
+func LiveSocket(newComponent func() LiveComponent) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
 		upgrader := websocket.Upgrader{}
@@ -175,38 +144,39 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 
 		events := make(chan Event, 1024)
 
-		errGroup, ctx := errgroup.WithContext(context.Background())
+		ctx, canc := context.WithCancel(r.Context())
+		errGroup, ctx := errgroup.WithContext(ctx)
 
 		component := newComponent()
 		route := r.URL.RawFragment
-		initialRender, patchesStream, componentErrors := newPatchesStream(ctx, component, events, route)
+		initialRender, patchesStream, _ := newPatchesStream(ctx, component, events, route)
 
 		// send mount message
-
-		conn.SetCloseHandler(func(code int, text string) error {
-			fmt.Println("CLOSED")
-			return nil
-		})
-
-		payload, err := json.Marshal(initialRender)
-		if err != nil {
-			rw.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		if err = conn.WriteMessage(websocket.BinaryMessage, payload); err != nil {
-			rw.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		errGroup.Go(func() error {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case err := <-componentErrors:
-				return err
+		{
+			payload, err := json.Marshal(initialRender)
+			if err != nil {
+				rw.WriteHeader(http.StatusBadRequest)
+				canc()
+				return
 			}
-		})
+
+			if err = conn.WriteMessage(websocket.BinaryMessage, payload); err != nil {
+				rw.WriteHeader(http.StatusBadRequest)
+				canc()
+				return
+			}
+		}
+
+		// errGroup.Go(func() error {
+		// 	select {
+		// 	case <-ctx.Done():
+		// 		return ctx.Err()
+		// 	case err := <-componentErrors:
+		// 		canc()
+		// 		log.Println(err)
+		// 		return err
+		// 	}
+		// })
 
 		errGroup.Go(func() error {
 			for {
@@ -247,7 +217,7 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 				} else {
 					t, ok := msg["name"].(string)
 					if !ok {
-						log.Println("expected name in event: ", msg)
+						continue
 					}
 					delete(msg, "name")
 					e = UserEvent{Name: t, Data: msg}
@@ -261,13 +231,13 @@ func handler(newComponent func() LiveComponent) http.HandlerFunc {
 			}
 		})
 
-		if err := errGroup.Wait(); err != nil {
+		if err := errGroup.Wait(); err != nil && !websocket.IsUnexpectedCloseError(err) {
 			log.Println("errGroup.Error: ", err)
 		}
-		log.Println("done with: ", err)
+		canc()
 
-		if unmountable, ok := component.(UnMountable); ok {
-			unmountable.UnMount()
+		if unmountable, ok := component.(Unmountable); ok {
+			unmountable.Unmount()
 		}
 		close(events)
 		conn.Close()

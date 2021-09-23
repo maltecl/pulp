@@ -113,6 +113,8 @@ func (e forExpr) Gen(g *Generator) id {
 	for %s {
 	`, pretty.Sprint(e.sd.static), e.rangeStr)
 
+		// this is pretty ugly
+
 		g.pushScope()
 		idStr := string(currentID)
 		ids := sprintDynamic(e.sd.dynamic, g)
@@ -125,6 +127,11 @@ func (e forExpr) Gen(g *Generator) id {
 
 		return ret
 	})
+}
+
+type keyedSectionExpr struct {
+	keyString string
+	sd        staticDynamicExpr
 }
 
 func (e keyedSectionExpr) Gen(g *Generator) id {

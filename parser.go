@@ -19,7 +19,7 @@ func (p *parser) assertf(cond bool, format string, args ...interface{}) {
 	if p.Error != nil || cond {
 		return
 	}
-	p.Error = fmt.Errorf(format, args...)
+	panic(fmt.Errorf(format, args...))
 }
 
 func NewParser(input string) *parser {
@@ -47,16 +47,23 @@ func (p *parser) next() *token {
 	}
 }
 
-func (p *parser) Parse() *staticDynamicExpr {
+func (p *parser) Parse() (result *staticDynamicExpr, err error) {
 	sd := staticDynamicExpr{}
 
 	go p.runLexer()
+
+	defer func() {
+		if rec, ok := recover().(error); ok {
+			err = rec
+		}
+	}()
 
 	ret, _ := parseAllUntil(p, []string{})
 	sd.dynamic = ret.dynamic
 	sd.static = ret.static
 
-	return &sd
+	result = &sd
+	return
 }
 
 func parseAllUntil(p *parser, delimiters []string) (ret staticDynamicExpr, endedWith string) {
@@ -64,7 +71,7 @@ func parseAllUntil(p *parser, delimiters []string) (ret staticDynamicExpr, ended
 	for !shouldBreak {
 		next := p.next()
 
-		shouldBreak = next.typ == tokEof
+		shouldBreak = next.typ == tokEof // the tokEof is not empty, so don't break here
 
 		for _, delimiter := range delimiters {
 			if p.lastTrimmed.value == delimiter {
@@ -74,10 +81,10 @@ func parseAllUntil(p *parser, delimiters []string) (ret staticDynamicExpr, ended
 		}
 
 		if next.typ == tokGoSource {
-			keyWord := strings.Split(strings.TrimSpace(next.value), " ")[0]
-			parser, foundMatchingKeyword := parserMap[keyWord]
+			keyWord := strings.Split(p.lastTrimmed.value, " ")[0]
+			parser, foundMatchingParser := parserMap[keyWord]
 
-			if !foundMatchingKeyword {
+			if !foundMatchingParser {
 				parser = parseRawString
 			}
 
@@ -155,10 +162,10 @@ type forExpr struct {
 func parseFor(p *parser) expr {
 	ret := forExpr{}
 
-	headParts := strings.Split(p.last.value[len("for "):], ":key")
-	ret.rangeStr = headParts[0]
-	if hasExplicitKey := len(headParts) > 1; hasExplicitKey {
-		ret.keyStr = headParts[1]
+	headerParts := strings.Split(p.last.value[len("for "):], ":key")
+	ret.rangeStr = headerParts[0]
+	if hasExplicitKey := len(headerParts) > 1; hasExplicitKey {
+		ret.keyStr = headerParts[1]
 	}
 
 	var endedWith string
@@ -168,17 +175,12 @@ func parseFor(p *parser) expr {
 	return ret
 }
 
-type keyedSectionExpr struct {
-	keyString string
-	sd        staticDynamicExpr
-}
+// func parseKeyedSection(p *parser) expr {
+// 	ret := keyedSectionExpr{keyString: p.last.value[len("key "):]}
 
-func parseKeyedSection(p *parser) expr {
-	ret := keyedSectionExpr{keyString: p.last.value[len("key "):]}
+// 	var endedWith string
+// 	ret.sd, endedWith = parseAllUntil(p, []string{"end"})
+// 	p.assertf(endedWith == "end", `expected "end", got: %q`, endedWith)
 
-	var endedWith string
-	ret.sd, endedWith = parseAllUntil(p, []string{"end"})
-	p.assertf(endedWith == "end", `expected "end", got: %q`, endedWith)
-
-	return ret
-}
+// 	return ret
+// }

@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 )
@@ -25,7 +24,7 @@ func init() {
 }
 
 func logic() error {
-	fileContent, err := ioutil.ReadFile(*inFilename)
+	fileContent, err := os.ReadFile(*inFilename)
 	if err != nil {
 		return err
 	}
@@ -54,6 +53,7 @@ func logic() error {
 
 func main() {
 	if err := logic(); err != nil {
-		log.Fatal(err)
+		fmt.Fprint(os.Stderr, err)
+		os.Exit(1)
 	}
 }
