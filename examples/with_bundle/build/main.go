@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/amblified/pulp"
+	"github.com/maltecl/pulp"
 )
 
 type index struct {

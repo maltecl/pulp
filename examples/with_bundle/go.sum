@@ -1,5 +1,5 @@
-github.com/amblified/pulp v0.0.1 h1:wB7hcahpBVcC1d906Nf92IrvinNGM+BBzuvUN9fapOI=
-github.com/amblified/pulp v0.0.1/go.mod h1:dyPqrGpk/sCPWtKlBrWDmMNZZ5hH7v+Ru6m3SfR+IF4=
+github.com/maltecl/pulp v0.0.1 h1:wB7hcahpBVcC1d906Nf92IrvinNGM+BBzuvUN9fapOI=
+github.com/maltecl/pulp v0.0.1/go.mod h1:dyPqrGpk/sCPWtKlBrWDmMNZZ5hH7v+Ru6m3SfR+IF4=
 github.com/google/go-cmp v0.5.6 h1:BKbKCqvP6I+rmFHt06ZmyQtvB8xAkWdhFyr0ZUNZcxQ=
 github.com/google/go-cmp v0.5.6/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/gorilla/websocket v1.4.2 h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0Ufc=
