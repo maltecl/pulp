@@ -1,6 +1,6 @@
 {
     "name": "pulp_web",
-    "version": "1.0.1",
+    "version": "0.0.2",
     "description": "",
     "main": "pulp.js",
     "scripts": {},
