@@ -63,6 +63,10 @@ func (c index) Unmount() {
 }
 
 func main() {
+
+	http.HandleFunc("/socket", pulp.LiveSocket(func() pulp.LiveComponent {
+		return &index{msg: "hello world"}
+	}))
 	// serve your html however you like
 	http.HandleFunc("/bundle.js", func(rw http.ResponseWriter, r *http.Request) {
 		http.ServeFile(rw, r, "web/bundle.js")
@@ -72,8 +76,5 @@ func main() {
 		http.ServeFile(rw, r, "web/index.html")
 	})
 
-	http.HandleFunc("/socket", pulp.LiveSocket(func() pulp.LiveComponent {
-		return &index{msg: "hello world"}
-	}))
 	http.ListenAndServe(":4000", nil)
 }

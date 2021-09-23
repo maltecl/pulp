@@ -2,7 +2,7 @@
 const { PulpSocket, events } = require("pulp_web")
 
 
-const socket = new PulpSocket("mount", "/socket", { debug: true })
+const socket = new PulpSocket("mount", "/socket", { debug: false })
 },{"pulp_web":5}],2:[function(require,module,exports){
 'use strict';
 

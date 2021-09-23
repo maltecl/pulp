@@ -1,8 +1,19 @@
-(function() {
+(function () {
     function r(e, n, t) {
-        function o(i, f) { if (!n[i]) { if (!e[i]) { var c = "function" == typeof require && require; if (!f && c) return c(i, !0); if (u) return u(i, !0); var a = new Error("Cannot find module '" + i + "'"); throw a.code = "MODULE_NOT_FOUND", a } var p = n[i] = { exports: {} };
-                e[i][0].call(p.exports, function(r) { var n = e[i][1][r]; return o(n || r) }, p, p.exports, r, e, n, t) } return n[i].exports } for (var u = "function" == typeof require && require, i = 0; i < t.length; i++) o(t[i]); return o } return r })()({
-    1: [function(require, module, exports) {
+        function o(i, f) {
+            if (!n[i]) {
+                if (!e[i]) { var c = "function" == typeof require && require; if (!f && c) return c(i, !0); if (u) return u(i, !0); var a = new Error("Cannot find module '" + i + "'"); throw a.code = "MODULE_NOT_FOUND", a }
+                var p = n[i] = { exports: {} };
+                e[i][0].call(p.exports, function (r) { var n = e[i][1][r]; return o(n || r) }, p, p.exports, r, e, n, t)
+            }
+            return n[i].exports
+        }
+        for (var u = "function" == typeof require && require, i = 0; i < t.length; i++) o(t[i]);
+        return o
+    }
+    return r
+})()({
+    1: [function (require, module, exports) {
         class Assets {
 
             constructor(obj) {
@@ -11,7 +22,7 @@
 
 
             patch(patches) {
-                let newAssets = {...this.cache }
+                let newAssets = { ...this.cache }
 
                 for (const key in patches) {
                     if (patches[key] === null) { // this element should be deleted
@@ -29,7 +40,7 @@
 
         module.exports = { Assets }
     }, {}],
-    2: [function(require, module, exports) {
+    2: [function (require, module, exports) {
         // pulp events are the events pulp will pick up on and send via the wire
         // they might as well be called events; I named them "tags" to differentiate between them and normal HTML events
         // the field "description" is not actually used yet
@@ -87,7 +98,7 @@
             keySubmitTag: keySubmitEvent,
         }
     }, {}],
-    3: [function(require, module, exports) {
+    3: [function (require, module, exports) {
         'use strict';
 
         var DOCUMENT_FRAGMENT_NODE = 11;
@@ -280,7 +291,7 @@
         }
 
         var specialElHandlers = {
-            OPTION: function(fromEl, toEl) {
+            OPTION: function (fromEl, toEl) {
                 var parentNode = fromEl.parentNode;
                 if (parentNode) {
                     var parentName = parentNode.nodeName.toUpperCase();
@@ -310,7 +321,7 @@
              * "value" property will have no effect since it is only used to the set the
              * initial value.  Similar for the "checked" attribute, and "disabled".
              */
-            INPUT: function(fromEl, toEl) {
+            INPUT: function (fromEl, toEl) {
                 syncBooleanAttrProp(fromEl, toEl, 'checked');
                 syncBooleanAttrProp(fromEl, toEl, 'disabled');
 
@@ -323,7 +334,7 @@
                 }
             },
 
-            TEXTAREA: function(fromEl, toEl) {
+            TEXTAREA: function (fromEl, toEl) {
                 var newValue = toEl.value;
                 if (fromEl.value !== newValue) {
                     fromEl.value = newValue;
@@ -342,7 +353,7 @@
                     firstChild.nodeValue = newValue;
                 }
             },
-            SELECT: function(fromEl, toEl) {
+            SELECT: function (fromEl, toEl) {
                 if (!toEl.hasAttribute('multiple')) {
                     var selectedIndex = -1;
                     var i = 0;
@@ -384,7 +395,7 @@
         var TEXT_NODE = 3;
         var COMMENT_NODE = 8;
 
-        function noop() {}
+        function noop() { }
 
         function defaultGetNodeKey(node) {
             if (node) {
@@ -562,7 +573,7 @@
                         } else {
                             // NOTE: we skip nested keyed nodes from being removed since there is
                             //       still a chance they will be matched up later
-                            removeNode(curFromNodeChild, fromEl, true /* skip keyed nodes */ );
+                            removeNode(curFromNodeChild, fromEl, true /* skip keyed nodes */);
                         }
                         curFromNodeChild = fromNextSibling;
                     }
@@ -670,7 +681,7 @@
                                                     } else {
                                                         // NOTE: we skip nested keyed nodes from being removed since there is
                                                         //       still a chance they will be matched up later
-                                                        removeNode(curFromNodeChild, fromEl, true /* skip keyed nodes */ );
+                                                        removeNode(curFromNodeChild, fromEl, true /* skip keyed nodes */);
                                                     }
 
                                                     curFromNodeChild = matchingFromEl;
@@ -728,7 +739,7 @@
                             } else {
                                 // NOTE: we skip nested keyed nodes from being removed since there is
                                 //       still a chance they will be matched up later
-                                removeNode(curFromNodeChild, fromEl, true /* skip keyed nodes */ );
+                                removeNode(curFromNodeChild, fromEl, true /* skip keyed nodes */);
                             }
 
                             curFromNodeChild = fromNextSibling;
@@ -847,183 +858,169 @@
         module.exports = morphdom;
 
     }, {}],
-    4: [function(require, module, exports) {
-        (function(process) {
-            (function() {
-                const morphdom = require("morphdom")
-                const { defaultEvents, ...otherEvents } = require("./events")
-                const { SD, FOR } = require("./types")
+    4: [function (require, module, exports) {
+        const morphdom = require("morphdom")
+        const { defaultEvents, ...otherEvents } = require("./events")
+        const { SD, FOR } = require("./types")
 
-                const { Assets } = require("./assets")
+        const { Assets } = require("./assets")
 
 
 
-                const morphdomHooks = (socket, handlers, userHooks) => ({
-                    getNodeKey: function(node) {
-                        return node.id;
-                    },
-                    onBeforeNodeAdded: function(node) {
-                        return node;
-                    },
-                    onNodeAdded: function(node) {
+        const morphdomHooks = (socket, handlers, userHooks) => ({
+            getNodeKey: function (node) {
+                return node.id;
+            },
+            onBeforeNodeAdded: function (node) {
+                return node;
+            },
+            onNodeAdded: function (node) {
 
-                        userHooks.onNodeAdded && userHooks.onNodeAdded(node)
+                userHooks.onNodeAdded && userHooks.onNodeAdded(node)
 
-                        for (const { applyWhen, on, event, handler }
-                            of handlers) {
+                for (const { applyWhen, on, event, handler }
+                    of handlers) {
 
-                            if (!applyWhen(node)) {
-                                continue
-                            }
-
-                            if (!node.hasAttribute(event) && !node.hasAttribute(":" + event)) {
-                                continue
-                            }
-
-
-                            let eventName = node.getAttribute(event)
-                            if (eventName === null) {
-                                eventName = node.getAttribute(":" + event)
-                            }
-
-                            node.addEventListener(on, (event) => {
-                                let payload = handler(event, eventName)
-                                if (payload === null) {
-                                    return
-                                }
-
-
-                                for (const attribute of node.attributes) {
-                                    if (attribute.name.startsWith(":value-")) {
-                                        const key = attribute.name.slice(":value-".length)
-                                        payload = {...payload, [key]: attribute.value.trim() }
-                                    }
-                                }
-
-                                socket.ws.send(JSON.stringify(payload, null, 0))
-                            })
-                        }
-
-                    },
-                    onBeforeElUpdated: function(fromEl, toEl) {
-                        return true;
-                    },
-                    onElUpdated: function(el) {
-
-                    },
-                    onBeforeNodeDiscarded: function(node) {
-                        return true;
-                    },
-                    onNodeDiscarded: function(node) {
-                        // note: all event-listeners should be removed automatically, as no one holds reference of the node 
-                        // see: https://stackoverflow.com/questions/12528049/if-a-dom-element-is-removed-are-its-listeners-also-removed-from-memory
-                    },
-                    onBeforeElChildrenUpdated: function(fromEl, toEl) {
-                        return true;
-                    },
-                    childrenOnly: false
-                })
-
-                class PulpSocket {
-
-                    constructor(mountID, wsPath, config) {
-                        const events = config.events || []
-                        const debug = config.debug || false
-                        const hooks = config.hooks || {}
-
-                        this.lastRoute = null
-                        let cachedSD = null;
-                        let cachedAssets = null
-
-                        const mount = document.getElementById(mountID)
-
-                        if (!wsPath.startsWith("/")) {
-                            wsPath = "/" + wsPath
-                        }
-
-                        this.ws = new WebSocket(new URL(wsPath, "ws://" + document.location.host).href)
-
-                        Object.assign(globalThis, { PulpSocket: this })
-
-                        const mHooks = morphdomHooks({ ws: this.ws }, [...Object.values(defaultEvents), ...events], hooks)
-
-
-                        this.ws.onopen = (it) => {
-                            if (debug) {
-                                console.log(`socket for ${mountID} connected: `, it)
-                            }
-                        }
-
-                        this.ws.onmessage = ({ data }) => {
-                            data.text()
-                                .then(x => [JSON.parse(x), x])
-                                .then(([messageJSON, raw]) => {
-
-                                    if (debug) {
-                                        console.log("got patch: ", raw, messageJSON)
-                                    }
-
-                                    if (messageJSON.assets !== undefined) {
-                                        const { assets } = messageJSON
-                                        console.log(assets)
-                                        if (cachedAssets == null) {
-                                            cachedAssets = new Assets(assets)
-                                        } else {
-                                            cachedAssets = cachedAssets.patch(assets)
-                                        }
-
-                                        Object.assign(globalThis, { cachedAssets })
-
-                                        const { route } = assets
-                                        history.pushState({}, null, route)
-                                        this.lastRoute = route
-
-
-                                        if (this.onassets !== undefined) {
-                                            this.onassets(cachedAssets.cache)
-                                        }
-                                    }
-
-
-                                    if (messageJSON.html !== undefined) {
-                                        if (cachedSD === null) { // has not mounted yet => no patching
-                                            cachedSD = new SD(messageJSON.html)
-                                        } else {
-                                            const patches = messageJSON.html
-                                            cachedSD = cachedSD.patch(patches)
-                                        }
-                                    }
-
-                                    const temp = document.createElement("div")
-                                    temp.id = mountID
-                                    temp.innerHTML = cachedSD.render()
-                                    morphdom(mount, temp, mHooks)
-
-                                }).catch(console.error)
-                        }
-
-
-                        const self = this
-                        window.addEventListener("popstate", (e) => {
-                            console.log("pop: ", e)
-                            self.ws.send(JSON.stringify({ from: this.lastRoute === null ? "" : this.lastRoute, to: new URL(document.location.href).pathname }, null, 0))
-                        })
+                    if (!applyWhen(node)) {
+                        continue
                     }
+
+                    if (!node.hasAttribute(event) && !node.hasAttribute(":" + event)) {
+                        continue
+                    }
+
+
+                    let eventName = node.getAttribute(event)
+                    if (eventName === null) {
+                        eventName = node.getAttribute(":" + event)
+                    }
+
+                    node.addEventListener(on, (event) => {
+                        let payload = handler(event, eventName)
+                        if (payload === null) {
+                            return
+                        }
+
+
+                        for (const attribute of node.attributes) {
+                            if (attribute.name.startsWith(":value-")) {
+                                const key = attribute.name.slice(":value-".length)
+                                payload = { ...payload, [key]: attribute.value.trim() }
+                            }
+                        }
+
+                        socket.ws.send(JSON.stringify(payload, null, 0))
+                    })
+                }
+
+            },
+            onBeforeElUpdated: function (fromEl, toEl) {
+                return true;
+            },
+            onElUpdated: function (el) {
+
+            },
+            onBeforeNodeDiscarded: function (node) {
+                return true;
+            },
+            onNodeDiscarded: function (node) {
+                // note: all event-listeners should be removed automatically, as no one holds reference of the node 
+                // see: https://stackoverflow.com/questions/12528049/if-a-dom-element-is-removed-are-its-listeners-also-removed-from-memory
+            },
+            onBeforeElChildrenUpdated: function (fromEl, toEl) {
+                return true;
+            },
+            childrenOnly: false
+        })
+
+        class PulpSocket {
+
+            constructor(mountID, wsPath, config) {
+                const events = config.events || []
+                const debug = config.debug || false
+                const hooks = config.hooks || {}
+
+                this.lastRoute = null
+                let cachedSD = null;
+                let cachedAssets = null
+
+                const mount = document.getElementById(mountID)
+
+                if (!wsPath.startsWith("/")) {
+                    wsPath = "/" + wsPath
+                }
+
+                this.ws = new WebSocket(new URL(wsPath, "ws://" + document.location.host).href)
+
+                Object.assign(globalThis, { PulpSocket: this })
+
+                const mHooks = morphdomHooks({ ws: this.ws }, [...Object.values(defaultEvents), ...events], hooks)
+
+
+                this.ws.onopen = (it) => {
+                    debug && console.log(`socket for ${mountID} connected: `, it)
+                }
+
+                this.ws.onmessage = ({ data }) => {
+                    data.text()
+                        .then(x => [JSON.parse(x), x])
+                        .then(([messageJSON, raw]) => {
+
+                            debug && console.log("got patch: ", raw, messageJSON)
+
+                            if (messageJSON.assets !== undefined) {
+                                const { assets } = messageJSON
+                                debug && console.log(assets)
+                                if (cachedAssets == null) {
+                                    cachedAssets = new Assets(assets)
+                                } else {
+                                    cachedAssets = cachedAssets.patch(assets)
+                                }
+
+                                Object.assign(globalThis, { cachedAssets })
+
+                                const { route } = assets
+                                history.pushState({}, null, route)
+                                this.lastRoute = route
+
+
+                                if (this.onassets !== undefined) {
+                                    this.onassets(cachedAssets.cache)
+                                }
+                            }
+
+
+                            if (messageJSON.html !== undefined) {
+                                if (cachedSD === null) { // has not mounted yet => no patching
+                                    cachedSD = new SD(messageJSON.html)
+                                } else {
+                                    const patches = messageJSON.html
+                                    cachedSD = cachedSD.patch(patches)
+                                }
+                            }
+
+                            const temp = document.createElement("div")
+                            temp.id = mountID
+                            temp.innerHTML = cachedSD.render()
+                            morphdom(mount, temp, mHooks)
+
+                        }).catch(console.error)
                 }
 
 
-                console.log("hellow rold")
-                Object.assign(globalThis, { Pulp: { PulpSocket, events: {...defaultEvents, ...otherEvents } } })
+                const self = this
+                window.addEventListener("popstate", (e) => {
+                    self.ws.send(JSON.stringify({ from: this.lastRoute === null ? "" : this.lastRoute, to: new URL(document.location.href).pathname }, null, 0))
+                })
+            }
+        }
 
-                if (typeof process === 'object') {
-                    module.exports = { PulpSocket, events: {...defaultEvents, ...otherEvents } }
-                } else {
-                    console.log("else case")
-                }
-            }).call(this)
-        }).call(this, require('_process'))
-    }, { "./assets": 1, "./events": 2, "./types": 5, "_process": 6, "morphdom": 3 }],
-    5: [function(require, module, exports) {
+
+        Object.assign(globalThis, { Pulp: { PulpSocket, events: { ...defaultEvents, ...otherEvents } } })
+
+        module.exports = { PulpSocket, events: { ...defaultEvents, ...otherEvents } }
+    }, { "./assets": 1, "./events": 2, "./types": 5, "morphdom": 3 }],
+    5: [function (require, module, exports) {
         const set = x => x !== undefined
 
 
@@ -1134,7 +1131,7 @@
             constructor({ /*strategy,*/ ds, s }) {
                 // this.strategy = strategy
                 this.s = s
-                this.ds = Object.keys(ds).reduce((acc, key) => ({...acc, [key]: ds[key].map(classify) }), {})
+                this.ds = Object.keys(ds).reduce((acc, key) => ({ ...acc, [key]: ds[key].map(classify) }), {})
             }
 
             render() {
@@ -1148,7 +1145,7 @@
             }
 
             patch(patches) {
-                let newDS = {...this.ds }
+                let newDS = { ...this.ds }
 
                 for (const key in patches.ds) {
                     if (patches.ds[key] === null) { // this element should be deleted
@@ -1160,7 +1157,7 @@
                     }
                 }
 
-                return new FOR({...this, ds: newDS })
+                return new FOR({ ...this, ds: newDS })
             }
 
         }
@@ -1170,195 +1167,5 @@
 
 
         module.exports = { SD, FOR, IF }
-    }, {}],
-    6: [function(require, module, exports) {
-        // shim for using process in browser
-        var process = module.exports = {};
-
-        // cached from whatever global is present so that test runners that stub it
-        // don't break things.  But we need to wrap it in a try catch in case it is
-        // wrapped in strict mode code which doesn't define any globals.  It's inside a
-        // function because try/catches deoptimize in certain engines.
-
-        var cachedSetTimeout;
-        var cachedClearTimeout;
-
-        function defaultSetTimout() {
-            throw new Error('setTimeout has not been defined');
-        }
-
-        function defaultClearTimeout() {
-            throw new Error('clearTimeout has not been defined');
-        }
-        (function() {
-            try {
-                if (typeof setTimeout === 'function') {
-                    cachedSetTimeout = setTimeout;
-                } else {
-                    cachedSetTimeout = defaultSetTimout;
-                }
-            } catch (e) {
-                cachedSetTimeout = defaultSetTimout;
-            }
-            try {
-                if (typeof clearTimeout === 'function') {
-                    cachedClearTimeout = clearTimeout;
-                } else {
-                    cachedClearTimeout = defaultClearTimeout;
-                }
-            } catch (e) {
-                cachedClearTimeout = defaultClearTimeout;
-            }
-        }())
-
-        function runTimeout(fun) {
-            if (cachedSetTimeout === setTimeout) {
-                //normal enviroments in sane situations
-                return setTimeout(fun, 0);
-            }
-            // if setTimeout wasn't available but was latter defined
-            if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-                cachedSetTimeout = setTimeout;
-                return setTimeout(fun, 0);
-            }
-            try {
-                // when when somebody has screwed with setTimeout but no I.E. maddness
-                return cachedSetTimeout(fun, 0);
-            } catch (e) {
-                try {
-                    // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-                    return cachedSetTimeout.call(null, fun, 0);
-                } catch (e) {
-                    // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-                    return cachedSetTimeout.call(this, fun, 0);
-                }
-            }
-
-
-        }
-
-        function runClearTimeout(marker) {
-            if (cachedClearTimeout === clearTimeout) {
-                //normal enviroments in sane situations
-                return clearTimeout(marker);
-            }
-            // if clearTimeout wasn't available but was latter defined
-            if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-                cachedClearTimeout = clearTimeout;
-                return clearTimeout(marker);
-            }
-            try {
-                // when when somebody has screwed with setTimeout but no I.E. maddness
-                return cachedClearTimeout(marker);
-            } catch (e) {
-                try {
-                    // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-                    return cachedClearTimeout.call(null, marker);
-                } catch (e) {
-                    // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-                    // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-                    return cachedClearTimeout.call(this, marker);
-                }
-            }
-
-
-
-        }
-        var queue = [];
-        var draining = false;
-        var currentQueue;
-        var queueIndex = -1;
-
-        function cleanUpNextTick() {
-            if (!draining || !currentQueue) {
-                return;
-            }
-            draining = false;
-            if (currentQueue.length) {
-                queue = currentQueue.concat(queue);
-            } else {
-                queueIndex = -1;
-            }
-            if (queue.length) {
-                drainQueue();
-            }
-        }
-
-        function drainQueue() {
-            if (draining) {
-                return;
-            }
-            var timeout = runTimeout(cleanUpNextTick);
-            draining = true;
-
-            var len = queue.length;
-            while (len) {
-                currentQueue = queue;
-                queue = [];
-                while (++queueIndex < len) {
-                    if (currentQueue) {
-                        currentQueue[queueIndex].run();
-                    }
-                }
-                queueIndex = -1;
-                len = queue.length;
-            }
-            currentQueue = null;
-            draining = false;
-            runClearTimeout(timeout);
-        }
-
-        process.nextTick = function(fun) {
-            var args = new Array(arguments.length - 1);
-            if (arguments.length > 1) {
-                for (var i = 1; i < arguments.length; i++) {
-                    args[i - 1] = arguments[i];
-                }
-            }
-            queue.push(new Item(fun, args));
-            if (queue.length === 1 && !draining) {
-                runTimeout(drainQueue);
-            }
-        };
-
-        // v8 likes predictible objects
-        function Item(fun, array) {
-            this.fun = fun;
-            this.array = array;
-        }
-        Item.prototype.run = function() {
-            this.fun.apply(null, this.array);
-        };
-        process.title = 'browser';
-        process.browser = true;
-        process.env = {};
-        process.argv = [];
-        process.version = ''; // empty string to avoid regexp issues
-        process.versions = {};
-
-        function noop() {}
-
-        process.on = noop;
-        process.addListener = noop;
-        process.once = noop;
-        process.off = noop;
-        process.removeListener = noop;
-        process.removeAllListeners = noop;
-        process.emit = noop;
-        process.prependListener = noop;
-        process.prependOnceListener = noop;
-
-        process.listeners = function(name) { return [] }
-
-        process.binding = function(name) {
-            throw new Error('process.binding is not supported');
-        };
-
-        process.cwd = function() { return '/' };
-        process.chdir = function(dir) {
-            throw new Error('process.chdir is not supported');
-        };
-        process.umask = function() { return 0; };
-
     }, {}]
 }, {}, [4]);
