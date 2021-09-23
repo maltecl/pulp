@@ -7,13 +7,13 @@ const { Assets } = require("./assets")
 
 
 const morphdomHooks = (socket, handlers, userHooks) => ({
-    getNodeKey: function(node) {
+    getNodeKey: function (node) {
         return node.id;
     },
-    onBeforeNodeAdded: function(node) {
+    onBeforeNodeAdded: function (node) {
         return node;
     },
-    onNodeAdded: function(node) {
+    onNodeAdded: function (node) {
 
         userHooks.onNodeAdded && userHooks.onNodeAdded(node)
 
@@ -44,7 +44,7 @@ const morphdomHooks = (socket, handlers, userHooks) => ({
                 for (const attribute of node.attributes) {
                     if (attribute.name.startsWith(":value-")) {
                         const key = attribute.name.slice(":value-".length)
-                        payload = {...payload, [key]: attribute.value.trim() }
+                        payload = { ...payload, [key]: attribute.value.trim() }
                     }
                 }
 
@@ -53,20 +53,20 @@ const morphdomHooks = (socket, handlers, userHooks) => ({
         }
 
     },
-    onBeforeElUpdated: function(fromEl, toEl) {
+    onBeforeElUpdated: function (fromEl, toEl) {
         return true;
     },
-    onElUpdated: function(el) {
+    onElUpdated: function (el) {
 
     },
-    onBeforeNodeDiscarded: function(node) {
+    onBeforeNodeDiscarded: function (node) {
         return true;
     },
-    onNodeDiscarded: function(node) {
+    onNodeDiscarded: function (node) {
         // note: all event-listeners should be removed automatically, as no one holds reference of the node 
         // see: https://stackoverflow.com/questions/12528049/if-a-dom-element-is-removed-are-its-listeners-also-removed-from-memory
     },
-    onBeforeElChildrenUpdated: function(fromEl, toEl) {
+    onBeforeElChildrenUpdated: function (fromEl, toEl) {
         return true;
     },
     childrenOnly: false
@@ -97,9 +97,7 @@ class PulpSocket {
 
 
         this.ws.onopen = (it) => {
-            if (debug) {
-                console.log(`socket for ${mountID} connected: `, it)
-            }
+            debug && console.log(`socket for ${mountID} connected: `, it)
         }
 
         this.ws.onmessage = ({ data }) => {
@@ -107,13 +105,11 @@ class PulpSocket {
                 .then(x => [JSON.parse(x), x])
                 .then(([messageJSON, raw]) => {
 
-                    if (debug) {
-                        console.log("got patch: ", raw, messageJSON)
-                    }
+                    debug && console.log("got patch: ", raw, messageJSON)
 
                     if (messageJSON.assets !== undefined) {
                         const { assets } = messageJSON
-                        console.log(assets)
+                        debug && console.log(assets)
                         if (cachedAssets == null) {
                             cachedAssets = new Assets(assets)
                         } else {
@@ -153,18 +149,12 @@ class PulpSocket {
 
         const self = this
         window.addEventListener("popstate", (e) => {
-            console.log("pop: ", e)
             self.ws.send(JSON.stringify({ from: this.lastRoute === null ? "" : this.lastRoute, to: new URL(document.location.href).pathname }, null, 0))
         })
     }
 }
 
 
-console.log("hellow rold")
-Object.assign(globalThis, { Pulp: { PulpSocket, events: {...defaultEvents, ...otherEvents } } })
+Object.assign(globalThis, { Pulp: { PulpSocket, events: { ...defaultEvents, ...otherEvents } } })
 
-if (typeof process === 'object') {
-    module.exports = { PulpSocket, events: {...defaultEvents, ...otherEvents } }
-} else {
-    console.log("else case")
-}
+module.exports = { PulpSocket, events: { ...defaultEvents, ...otherEvents } }
