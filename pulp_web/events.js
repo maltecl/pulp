@@ -1,5 +1,4 @@
 // pulp events are the events pulp will pick up on and send via the wire
-// they might as well be called events; I named them "tags" to differentiate between them and normal HTML events
 // the field "description" is not actually used yet
 
 
@@ -37,6 +36,7 @@ const keySubmitEvent = {
     on: "keydown", // uses the "keydonw" HTML Event
     event: "key-submit", // is tagged with "key-submit". in the source code it looks like this: ":key-submit=<name>"
     handler(e, name) {
+        console.log("MARKER2")
         const enterKeyCode = 13
         if (e.keyCode !== enterKeyCode) {
             return null // reject the event. Payload is not sent
@@ -45,7 +45,6 @@ const keySubmitEvent = {
         return { name }
     },
 }
-
 
 module.exports = {
     defaultEvents: {

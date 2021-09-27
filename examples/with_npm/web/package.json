@@ -7,7 +7,7 @@
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "dependencies": {
-        "pulp_web": "1.0.1"
+        "pulp_web": "0.0.2"
     },
     "author": "malte.l",
     "license": "ISC"

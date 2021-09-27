@@ -8,9 +8,9 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
-	"pulp"
 
 	"github.com/kr/pretty"
+	"github.com/maltecl/pulp"
 	"golang.org/x/tools/go/ast/astutil"
 )
 

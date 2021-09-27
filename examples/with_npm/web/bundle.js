@@ -846,7 +846,6 @@ module.exports = {
     keySubmitTag: keySubmitEvent,
 }
 },{}],5:[function(require,module,exports){
-(function (process){(function (){
 const morphdom = require("morphdom")
 const { defaultEvents, ...otherEvents } = require("./events")
 const { SD, FOR } = require("./types")
@@ -856,13 +855,13 @@ const { Assets } = require("./assets")
 
 
 const morphdomHooks = (socket, handlers, userHooks) => ({
-    getNodeKey: function(node) {
+    getNodeKey: function (node) {
         return node.id;
     },
-    onBeforeNodeAdded: function(node) {
+    onBeforeNodeAdded: function (node) {
         return node;
     },
-    onNodeAdded: function(node) {
+    onNodeAdded: function (node) {
 
         userHooks.onNodeAdded && userHooks.onNodeAdded(node)
 
@@ -893,7 +892,7 @@ const morphdomHooks = (socket, handlers, userHooks) => ({
                 for (const attribute of node.attributes) {
                     if (attribute.name.startsWith(":value-")) {
                         const key = attribute.name.slice(":value-".length)
-                        payload = {...payload, [key]: attribute.value.trim() }
+                        payload = { ...payload, [key]: attribute.value.trim() }
                     }
                 }
 
@@ -902,20 +901,20 @@ const morphdomHooks = (socket, handlers, userHooks) => ({
         }
 
     },
-    onBeforeElUpdated: function(fromEl, toEl) {
+    onBeforeElUpdated: function (fromEl, toEl) {
         return true;
     },
-    onElUpdated: function(el) {
+    onElUpdated: function (el) {
 
     },
-    onBeforeNodeDiscarded: function(node) {
+    onBeforeNodeDiscarded: function (node) {
         return true;
     },
-    onNodeDiscarded: function(node) {
+    onNodeDiscarded: function (node) {
         // note: all event-listeners should be removed automatically, as no one holds reference of the node 
         // see: https://stackoverflow.com/questions/12528049/if-a-dom-element-is-removed-are-its-listeners-also-removed-from-memory
     },
-    onBeforeElChildrenUpdated: function(fromEl, toEl) {
+    onBeforeElChildrenUpdated: function (fromEl, toEl) {
         return true;
     },
     childrenOnly: false
@@ -946,9 +945,7 @@ class PulpSocket {
 
 
         this.ws.onopen = (it) => {
-            if (debug) {
-                console.log(`socket for ${mountID} connected: `, it)
-            }
+            debug && console.log(`socket for ${mountID} connected: `, it)
         }
 
         this.ws.onmessage = ({ data }) => {
@@ -956,13 +953,11 @@ class PulpSocket {
                 .then(x => [JSON.parse(x), x])
                 .then(([messageJSON, raw]) => {
 
-                    if (debug) {
-                        console.log("got patch: ", raw, messageJSON)
-                    }
+                    debug && console.log("got patch: ", raw, messageJSON)
 
                     if (messageJSON.assets !== undefined) {
                         const { assets } = messageJSON
-                        console.log(assets)
+                        debug && console.log(assets)
                         if (cachedAssets == null) {
                             cachedAssets = new Assets(assets)
                         } else {
@@ -1002,23 +997,16 @@ class PulpSocket {
 
         const self = this
         window.addEventListener("popstate", (e) => {
-            console.log("pop: ", e)
             self.ws.send(JSON.stringify({ from: this.lastRoute === null ? "" : this.lastRoute, to: new URL(document.location.href).pathname }, null, 0))
         })
     }
 }
 
 
-console.log("hellow rold")
-Object.assign(globalThis, { Pulp: { PulpSocket, events: {...defaultEvents, ...otherEvents } } })
+Object.assign(globalThis, { Pulp: { PulpSocket, events: { ...defaultEvents, ...otherEvents } } })
 
-if (typeof process === 'object') {
-    module.exports = { PulpSocket, events: {...defaultEvents, ...otherEvents } }
-} else {
-    console.log("else case")
-}
-}).call(this)}).call(this,require('_process'))
-},{"./assets":3,"./events":4,"./types":6,"_process":7,"morphdom":2}],6:[function(require,module,exports){
+module.exports = { PulpSocket, events: { ...defaultEvents, ...otherEvents } }
+},{"./assets":3,"./events":4,"./types":6,"morphdom":2}],6:[function(require,module,exports){
 const set = x => x !== undefined
 
 
@@ -1165,190 +1153,4 @@ class FOR {
 
 
 module.exports = { SD, FOR, IF }
-},{}],7:[function(require,module,exports){
-// shim for using process in browser
-var process = module.exports = {};
-
-// cached from whatever global is present so that test runners that stub it
-// don't break things.  But we need to wrap it in a try catch in case it is
-// wrapped in strict mode code which doesn't define any globals.  It's inside a
-// function because try/catches deoptimize in certain engines.
-
-var cachedSetTimeout;
-var cachedClearTimeout;
-
-function defaultSetTimout() {
-    throw new Error('setTimeout has not been defined');
-}
-function defaultClearTimeout () {
-    throw new Error('clearTimeout has not been defined');
-}
-(function () {
-    try {
-        if (typeof setTimeout === 'function') {
-            cachedSetTimeout = setTimeout;
-        } else {
-            cachedSetTimeout = defaultSetTimout;
-        }
-    } catch (e) {
-        cachedSetTimeout = defaultSetTimout;
-    }
-    try {
-        if (typeof clearTimeout === 'function') {
-            cachedClearTimeout = clearTimeout;
-        } else {
-            cachedClearTimeout = defaultClearTimeout;
-        }
-    } catch (e) {
-        cachedClearTimeout = defaultClearTimeout;
-    }
-} ())
-function runTimeout(fun) {
-    if (cachedSetTimeout === setTimeout) {
-        //normal enviroments in sane situations
-        return setTimeout(fun, 0);
-    }
-    // if setTimeout wasn't available but was latter defined
-    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-        cachedSetTimeout = setTimeout;
-        return setTimeout(fun, 0);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedSetTimeout(fun, 0);
-    } catch(e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-            return cachedSetTimeout.call(null, fun, 0);
-        } catch(e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-            return cachedSetTimeout.call(this, fun, 0);
-        }
-    }
-
-
-}
-function runClearTimeout(marker) {
-    if (cachedClearTimeout === clearTimeout) {
-        //normal enviroments in sane situations
-        return clearTimeout(marker);
-    }
-    // if clearTimeout wasn't available but was latter defined
-    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-        cachedClearTimeout = clearTimeout;
-        return clearTimeout(marker);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedClearTimeout(marker);
-    } catch (e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-            return cachedClearTimeout.call(null, marker);
-        } catch (e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-            return cachedClearTimeout.call(this, marker);
-        }
-    }
-
-
-
-}
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = runTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    runClearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        runTimeout(drainQueue);
-    }
-};
-
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-process.prependListener = noop;
-process.prependOnceListener = noop;
-
-process.listeners = function (name) { return [] }
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
-
 },{}]},{},[1]);
