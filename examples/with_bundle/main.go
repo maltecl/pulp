@@ -69,5 +69,5 @@ func main() {
 	http.HandleFunc("/socket", pulp.LiveSocket(func() pulp.LiveComponent {
 		return &index{msg: "hello world"}
 	}))
-	http.ListenAndServe(":4000", nil)
+	http.ListenAndServe(":4001", nil)
 }
