@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -76,5 +77,6 @@ func main() {
 		http.ServeFile(rw, r, "web/index.html")
 	})
 
+	fmt.Println("listening on localhost:4000")
 	http.ListenAndServe(":4000", nil)
 }

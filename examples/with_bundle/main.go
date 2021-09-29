@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -69,5 +70,6 @@ func main() {
 	http.HandleFunc("/socket", pulp.LiveSocket(func() pulp.LiveComponent {
 		return &index{msg: "hello world"}
 	}))
+	fmt.Println("listening on localhost:4000")
 	http.ListenAndServe(":4001", nil)
 }
