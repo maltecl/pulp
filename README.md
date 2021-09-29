@@ -10,9 +10,10 @@ func (c index) Render(pulp.Socket) (pulp.HTML, pulp.Assets) {
           <h2> {{ c.message }} </h2>
         {{ end }}
 
-		<button :click="increment"> increment </button> <span> you have pressed the button {{ c.counter }} times </span> 
+		<button :click="increment"> increment </button> 
+    <span> you have pressed the button {{ c.counter }} times </span> 
 
-        <input :input="input-changed" value={{ c.inputValue }} :value-some="some value to be sent along with the input event"/>
+        <input :input="input-changed" value={{ c.inputValue }} />
 
         {{ for _, user := range users :key user.id}}
           ...
