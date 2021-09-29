@@ -5,7 +5,7 @@ Pulp allows you to write dynamic web-applications entirely in go, by reacting to
 
 ```go
 func (c index) Render(pulp.Socket) (pulp.HTML, pulp.Assets) {
-	return pulp.L(`
+  return pulp.L(`
     {{ if c.showMessage }}
       <h2> {{ c.message }} </h2>
     {{ end }}
@@ -18,7 +18,7 @@ func (c index) Render(pulp.Socket) (pulp.HTML, pulp.Assets) {
     {{ for _, user := range users :key user.id}}
       ...
     {{ end }}
-	`), nil
+  `), nil
 }
 ```
 
