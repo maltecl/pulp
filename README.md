@@ -72,7 +72,7 @@ Template code:
  <input :input="<event name>" />
  ```
 
- where `event name` is the name, that is then passed to `HandleEvent`. Along with that are passed are all values of the attributes that start with `:value-`: 
+ where `event name` is the name, that is then passed to `HandleEvent`. Along with that are passed all values of the attributes that start with `:value-`: 
 ```handlebars
  <input :input="<event name>" :value-some-value="you could use a dynamic value here" value={{ c.message }}/>
  ```
@@ -151,7 +151,16 @@ For loops on the other hand can do this:
 The code before `:key` is copied into the compiled source, just like with the `if`-expression. The expression after `:key` is used as a key for the body of the `for`-loop. The key must be of type `string` and __must__ be specified. The mechanism used here is similar to the one react uses and makes for much smaller patches and more efficient patching. As in react (? not sure about the current state) using the index , of an element as the key, may result in weird behaviour. 
 
 
+There is no extra syntax for declaring a variable inside the template. In the future this might be a good idea, but for now just declare that variable in the scope outside of the template, you can access it from inside the template.
 
+Also, for embedding one template inside another, just use the normal "{{ }}":
+```handlebars
+{{ navbar }}
+{{ body }}
+{{ footer}}
+```
+
+The templating language is really small, because you can do things like creating functions/declaring variables in the scope outside of the template and then call/access it from inside the template without any more trouble.
 
 
 ## Why does this exist?
