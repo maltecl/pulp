@@ -23,7 +23,7 @@ func (c index) Render(pulp.Socket) (pulp.HTML, pulp.Assets) {
 ```
 
 ## Getting Started
-The best way to start, is to copy one of the examples. Right now there are only two examples: one for when you want to use npm for including the client library, one for when you just want to include a bundled js file. When you don't use the already bundled file, you will need some tool for bundling the library and your js files. The example uses [browserify](). Install (globally) with `npm i -g browserify`. Run `GOBIN=<target directory> go install github.com/maltecl/pulp/cmd/gen@latest` to install the tool that will generate go code from your templates. Make sure `GOBIN` is in your PATH. 
+The best way to start, is to copy one of the examples. Right now there are only two examples: one for when you want to use npm for including the client library, one for when you just want to include a bundled js file. When you don't use the already bundled file, you will need some tool for bundling the library and your js files. The example uses [browserify](https://browserify.org/). Install (globally) with `npm i -g browserify`. Run `GOBIN=<target directory> go install github.com/maltecl/pulp/cmd/gen@latest` to install the tool that will generate go code from your templates. Make sure `GOBIN` is in your PATH. 
 
 
 Now, run the `run.sh` script and open the url in your browser. 
@@ -165,7 +165,7 @@ I wrote this, (partly) because I needed the end result. There are many ways to i
 Things I would really like to add:
 - components -> right now, one component cannot render another component directly
 - a more complete router
-- ? smaller patches using [json-path]() (for now it's okay though)
+- ? smaller patches using [json-path](https://jsonpath.com/) (for now it's okay though)
 
 If you have anything you want to add or a question in general, let me know.
 
