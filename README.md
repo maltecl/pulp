@@ -6,18 +6,18 @@ Pulp allows you to write dynamic web-applications entirely in go, by reacting to
 ```go
 func (c index) Render(pulp.Socket) (pulp.HTML, pulp.Assets) {
 	return pulp.L(`
-        {{ if c.showMessage }}
-          <h2> {{ c.message }} </h2>
-        {{ end }}
+    {{ if c.showMessage }}
+      <h2> {{ c.message }} </h2>
+    {{ end }}
 
-  <button :click="increment"> increment </button> 
+    <button :click="increment"> increment </button> 
     <span> you have pressed the button {{ c.counter }} times </span> 
 
-        <input :input="input-changed" value={{ c.inputValue }} />
+    <input :input="input-changed" value={{ c.inputValue }} />
 
-        {{ for _, user := range users :key user.id}}
-          ...
-        {{ end }}
+    {{ for _, user := range users :key user.id}}
+      ...
+    {{ end }}
 	`), nil
 }
 ```
