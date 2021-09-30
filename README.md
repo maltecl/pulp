@@ -218,7 +218,7 @@ func (c *index) Mount(socket pulp.Socket) {
 
 ## Why does this exist?
 As far as I am aware of, there are currently three other projects (I will link them here), that do the LiveView for go thing. I wrote my own version, because I wanted it to be as simple as writing LiveView components and also because I wanted to learn the details.
-
+I wrote the template language, because of technical details, but also, because I wanted it to feel more like react, where you can refer to your code directly. This makes for faster developement and, because the template code is compiled to go code, you also get type safety.
 
 
 ## What's planned?
