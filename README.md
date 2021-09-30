@@ -46,7 +46,7 @@ There are 4 steps:
 
 
 
-## Livecycle
+## Lifecycle
 Pulp roughly uses the same methods as Phoenix LiveView, I do __not__ claim to have invented the mechanism.
 
 Upon mount, the template you wrote will be rendered and sent to the client. From now on, the client uses the same websocket connection to send all the events, that should be reacted to, to the server. The server will then re-render the template, compare the old render with the new render and create patches from that. Those are then sent across the wire back to the client and will be (efficiently) patched into the dom.
