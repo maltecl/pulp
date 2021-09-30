@@ -172,6 +172,42 @@ Also, for embedding one template inside another, just use the normal "{{ }}":
 The templating language is really small, because you can do things like creating functions/declaring variables in the scope outside of the template and then call/access it from inside the template without any more trouble.
 
 
+## Further tips
+If you want to use this with [nats.io](https://pkg.go.dev/github.com/nats-io/nats.go), make sure to not use the callback way of subscribing to topics, if you use the socket in that callback. This will cause problems, because the socket is not garbage-collected, even if it umounted. Use channels instead:
+
+
+```go
+func (c *index) Mount(socket pulp.Socket) {
+    socket.Redirect("/login")
+    c.users = map[string]struct{}{}
+    socket.Update()
+
+    newMessage := make(chan Message)
+    pubSub.BindRecvChan("new-message", newMessage)
+    userJoined := make(chan string)
+    pubSub.BindRecvChan("user-joined", userJoined)
+
+    go func() {
+      defer func() {
+        close(newMessage)
+        close(userJoined)
+      }()
+
+      for {
+        select {
+        case <-socket.Done():
+          return
+        case msg := <-newMessage:
+          c.chatHistory = append(c.chatHistory, msg)
+        case username := <-userJoined:
+          c.users[username] = struct{}{}
+        }
+        socket.Update()
+      }
+    }()
+}
+```
+
 ## Why does this exist?
 As far as I am aware of, there are currently three other projects (I will link them here), that do the LiveView for go thing. I wrote my own version, because I wanted it to be as simple as writing LiveView components and also because I wanted to learn the details.
 
