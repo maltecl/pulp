@@ -217,7 +217,15 @@ func (c *index) Mount(socket pulp.Socket) {
 ```
 
 ## Why does this exist?
-As far as I am aware of, there are currently three other projects (I will link them here), that do the LiveView for go thing. I wrote my own version, because I wanted it to be as simple as writing LiveView components and also because I wanted to learn the details.
+As far as I am aware of, there are currently three other projects, that do the LiveView for go thing:
+
+| library |  order by page rank (lower is better) | number of github stars | 
+|---|---|---|
+| [golive](https://www.grank.io/pkg/github.com/brendonmatos/golive.html) | 3421 | [178](https://github.com/brendonmatos/golive) |
+| [jfyne/live](https://www.grank.io/pkg/github.com/jfyne/live.html) | 7742  | [299](https://github.com/jfyne/live) |
+| [hlive](https://www.grank.io/pkg/github.com/SamHennessy/hlive%20(github.com/samhennessy/hlive).html) | 7742 | [23](https://github.com/SamHennessy/hlive) |
+
+I wrote my own version, because I wanted it to be as simple as writing LiveView components and also because I wanted to learn the details.
 I wrote the template language, because of technical details, but also, because I wanted it to feel more like react, where you can refer to your code directly. This makes for faster developement and, because the template code is compiled to go code, you also get type safety.
 
 
