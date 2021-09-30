@@ -66,6 +66,14 @@ type LiveComponent interface {
 
 `HandleEvent` is called, whenever the client sent a pulp-event. Call `socket.Update()` from inside `HandleEvent()` when you are done handling the event to reflect the changes in the client.
 
+Optionally, the component can have a `Unmount()` method, that is called, when the connection is closed for whatever reason.
+
+```go
+type Unmountable interface {
+	Unmount()
+}
+```
+
 
 ## Pulp Events
 Pulp events are those things that start with ":". Because of a lack of time, only three (`:click`, `:input`, `:key-submit`) of those are so far implemented and pulled in by default. See [pulp_web/events.js](https://github.com/maltecl/pulp/blob/master/pulp_web/events.js) for how you would go and implement your own. You can tell pulp to use your own events in addition like this:
