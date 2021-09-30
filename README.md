@@ -31,9 +31,9 @@ Now, run the `run.sh` script and open the url in your browser.
 Pulp is built so, that you can integrate it in your existing app. 
 There are 4 steps:
 - You need a struct that implements `LiveComponent`
-- expose it's websocket via `LiveSocket(newComponent func() LiveComponent) http.HandlerFunc`
+- expose it's websocket via `LiveSocket(newComponent func() LiveComponent) http.HandlerFunc`. You can use any router for that.
 - have an HTML Element with an ID
-- use `new PulpSocket("<that ID>", "/livesocket")` to connect to the live-socket and mount it at that ID
+- use `new PulpSocket("<that ID>", "/<livesocket route>")` to connect to the live-socket and mount it at that ID
 
 
 
