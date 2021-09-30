@@ -20,6 +20,15 @@ func (c index) Render(pulp.Socket) (pulp.HTML, pulp.Assets) {
     {{ end }}
   `), nil
 }
+
+
+func (c *index) HandleEvent(event pulp.Event, socket pulp.Socket) {
+	switch event.(pulp.UserEvent).Name {
+	case "increment":
+		c.counter++
+		socket.Update()
+	}
+}
 ```
 
 ## Getting Started
